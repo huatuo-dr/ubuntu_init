@@ -9,6 +9,7 @@ readonly TMUX_CONFIG_REPO="${UBUNTU_INIT_TMUX_CONFIG_REPO:-https://github.com/Ky
 readonly TMUX_CONFIG_DIR="${UBUNTU_INIT_TMUX_CONFIG_DIR:-${HOME}/.cache/ubuntu-init/tmux.conf}"
 readonly NVIM_CONFIG_REPO="${UBUNTU_INIT_NVIM_CONFIG_REPO:-https://github.com/KyleDeng/nvim.git}"
 readonly NVIM_CONFIG_DIR="${UBUNTU_INIT_NVIM_CONFIG_DIR:-${HOME}/.config/nvim}"
+readonly LAZYGIT_COMMAND="${UBUNTU_INIT_LAZYGIT_COMMAND:-lazygit}"
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
     readonly COLOR_BLUE=$'\033[34m'
@@ -44,13 +45,16 @@ warn() {
 
 configure_yazi_repository() {
     local codename
+    local key_file
 
     if [[ -f "${YAZI_KEYRING}" ]]; then
         warn "Yazi repository key already exists, keeping it: ${YAZI_KEYRING}"
     else
         info "Installing Yazi repository key"
-        curl -sS https://debian.griffo.io/EA0F721D231FDD3A0A17B9AC7808B4DD62C41256.asc \
-            | gpg --dearmor --yes -o "${YAZI_KEYRING}"
+        key_file="$(mktemp)"
+        curl -sS https://debian.griffo.io/EA0F721D231FDD3A0A17B9AC7808B4DD62C41256.asc -o "${key_file}"
+        gpg --dearmor --yes -o "${YAZI_KEYRING}" "${key_file}"
+        rm -f "${key_file}"
     fi
 
     if [[ -f "${YAZI_SOURCE_LIST}" ]]; then
@@ -168,6 +172,11 @@ install_tmux_config() {
     mkdir -p "$(dirname "${TMUX_CONFIG_DIR}")"
     clone_if_missing "${TMUX_CONFIG_REPO}" "${TMUX_CONFIG_DIR}"
 
+    if [[ -f "${HOME}/.tmux.conf" ]]; then
+        warn "tmux config already exists, keeping it: ${HOME}/.tmux.conf"
+        return
+    fi
+
     if [[ -f "${TMUX_CONFIG_DIR}/tmux.conf" ]]; then
         cp "${TMUX_CONFIG_DIR}/tmux.conf" "${HOME}/.tmux.conf"
     else
@@ -178,6 +187,11 @@ install_tmux_config() {
 install_lazygit() {
     local version
     local temp_dir
+
+    if command -v "${LAZYGIT_COMMAND}" >/dev/null 2>&1; then
+        warn "lazygit already exists, skipping install"
+        return
+    fi
 
     info "Installing lazygit"
     version="$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" \
