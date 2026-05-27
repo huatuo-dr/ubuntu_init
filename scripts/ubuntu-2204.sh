@@ -2,6 +2,9 @@
 set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly APT_SOURCES_LIST="${UBUNTU_INIT_APT_SOURCES_LIST:-/etc/apt/sources.list}"
+readonly DEV_TOOLS_SCRIPT="${UBUNTU_INIT_DEV_TOOLS_SCRIPT:-${SCRIPT_DIR}/install-dev-tools.sh}"
+readonly ZSH_NVIM_SCRIPT="${UBUNTU_INIT_ZSH_NVIM_SCRIPT:-${SCRIPT_DIR}/install-zsh-nvim.sh}"
 
 info() {
     printf "\n[INFO] %s\n" "$*"
@@ -27,6 +30,32 @@ require_ubuntu_2204() {
     fi
 }
 
+setup_apt_sources() {
+    info "Configuring Aliyun apt sources for Ubuntu 22.04"
+
+    sudo cp "${APT_SOURCES_LIST}" "${APT_SOURCES_LIST}.bak"
+    sudo tee "${APT_SOURCES_LIST}" >/dev/null <<'EOF'
+deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse
+EOF
+
+    sudo apt-get update
+}
+
+run_script() {
+    local script_path="$1"
+    local script_name="$2"
+
+    if [[ ! -f "${script_path}" ]]; then
+        die "Missing ${script_name} script: ${script_path}"
+    fi
+
+    info "Running ${script_name}"
+    bash "${script_path}"
+}
+
 main() {
     require_wsl
     require_ubuntu_2204
@@ -36,8 +65,12 @@ main() {
 
     info "Ubuntu 22.04 WSL initialization starts"
     info "Script directory: ${SCRIPT_DIR}"
-    info "Next: install development tools"
-    info "Next: install zsh and neovim environment"
+
+    setup_apt_sources
+    run_script "${DEV_TOOLS_SCRIPT}" "development tools setup"
+    run_script "${ZSH_NVIM_SCRIPT}" "zsh and neovim setup"
+
+    info "Ubuntu 22.04 WSL initialization finished"
 }
 
 main "$@"
