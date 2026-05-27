@@ -6,6 +6,12 @@ readonly APT_SOURCES_LIST="${UBUNTU_INIT_APT_SOURCES_LIST:-/etc/apt/sources.list
 readonly DEV_TOOLS_SCRIPT="${UBUNTU_INIT_DEV_TOOLS_SCRIPT:-${SCRIPT_DIR}/install-dev-tools.sh}"
 readonly ZSH_NVIM_SCRIPT="${UBUNTU_INIT_ZSH_NVIM_SCRIPT:-${SCRIPT_DIR}/install-zsh-nvim.sh}"
 
+ASSUME_YES=0
+SKIP_UPGRADE=0
+SKIP_DEV_TOOLS=0
+SKIP_ZSH_NVIM=0
+SUDO_KEEPALIVE_PID=""
+
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
     readonly COLOR_BLUE=$'\033[34m'
     readonly COLOR_GREEN=$'\033[32m'
@@ -45,6 +51,46 @@ die() {
     exit 1
 }
 
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [options]
+
+Options:
+  -y, --yes          Run without interactive confirmation.
+  --skip-upgrade    Skip system package upgrade.
+  --skip-dev-tools  Skip development tools setup.
+  --skip-zsh-nvim   Skip zsh and neovim setup.
+  -h, --help        Show this help message.
+EOF
+}
+
+parse_args() {
+    while (($#)); do
+        case "$1" in
+            -y | --yes)
+                ASSUME_YES=1
+                ;;
+            --skip-upgrade)
+                SKIP_UPGRADE=1
+                ;;
+            --skip-dev-tools)
+                SKIP_DEV_TOOLS=1
+                ;;
+            --skip-zsh-nvim)
+                SKIP_ZSH_NVIM=1
+                ;;
+            -h | --help)
+                usage
+                exit 0
+                ;;
+            *)
+                die "Unknown option: $1"
+                ;;
+        esac
+        shift
+    done
+}
+
 require_wsl() {
     if ! grep -qi microsoft /proc/version; then
         die "This script should run inside WSL."
@@ -58,6 +104,48 @@ require_ubuntu_2204() {
     if [[ "${ID}" != "ubuntu" || "${VERSION_ID}" != "22.04" ]]; then
         die "This script should run on Ubuntu 22.04."
     fi
+}
+
+confirm_execution() {
+    local answer
+
+    if [[ "${ASSUME_YES}" == "1" ]]; then
+        return
+    fi
+
+    cat <<EOF
+This script will:
+  - configure Aliyun apt sources
+  - clean apt cache and package lists
+  - update apt package lists
+  - upgrade installed system packages
+  - run enabled setup scripts
+EOF
+
+    printf "Continue? [y/N] "
+    read -r answer
+    if [[ ! "${answer}" =~ ^[Yy]$ ]]; then
+        die "Aborted by user."
+    fi
+}
+
+stop_sudo_keepalive() {
+    if [[ -n "${SUDO_KEEPALIVE_PID}" ]]; then
+        kill "${SUDO_KEEPALIVE_PID}" 2>/dev/null || true
+    fi
+}
+
+start_sudo_keepalive() {
+    if [[ -n "${UBUNTU_INIT_DISABLE_SUDO_KEEPALIVE:-}" ]]; then
+        return
+    fi
+
+    while true; do
+        sudo -n true
+        sleep 60
+    done 2>/dev/null &
+    SUDO_KEEPALIVE_PID="$!"
+    trap stop_sudo_keepalive EXIT
 }
 
 setup_apt_sources() {
@@ -97,19 +185,36 @@ run_script() {
 }
 
 main() {
+    parse_args "$@"
     require_wsl
     require_ubuntu_2204
+    confirm_execution
 
     info "Requesting sudo permission"
     sudo -v
+    start_sudo_keepalive
 
     info "Ubuntu 22.04 WSL initialization starts"
     info "Script directory: ${SCRIPT_DIR}"
 
     setup_apt_sources
-    upgrade_system_packages
-    run_script "${DEV_TOOLS_SCRIPT}" "development tools setup"
-    run_script "${ZSH_NVIM_SCRIPT}" "zsh and neovim setup"
+    if [[ "${SKIP_UPGRADE}" == "1" ]]; then
+        warn "Skipping system package upgrade"
+    else
+        upgrade_system_packages
+    fi
+
+    if [[ "${SKIP_DEV_TOOLS}" == "1" ]]; then
+        warn "Skipping development tools setup"
+    else
+        run_script "${DEV_TOOLS_SCRIPT}" "development tools setup"
+    fi
+
+    if [[ "${SKIP_ZSH_NVIM}" == "1" ]]; then
+        warn "Skipping zsh and neovim setup"
+    else
+        run_script "${ZSH_NVIM_SCRIPT}" "zsh and neovim setup"
+    fi
 
     success "Ubuntu 22.04 WSL initialization finished"
 }

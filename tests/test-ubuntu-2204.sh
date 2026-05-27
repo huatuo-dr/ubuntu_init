@@ -48,13 +48,14 @@ export TEST_SOURCES_LIST="${TMP_DIR}/sources.list"
 export TEST_SOURCES_BACKUP="${TMP_DIR}/sources.list.bak"
 export PATH="${TMP_DIR}/bin:${PATH}"
 export NO_COLOR=1
+export UBUNTU_INIT_DISABLE_SUDO_KEEPALIVE=1
 export UBUNTU_INIT_APT_SOURCES_LIST="${TEST_SOURCES_LIST}"
 export UBUNTU_INIT_DEV_TOOLS_SCRIPT="${TMP_DIR}/install-dev-tools.sh"
 export UBUNTU_INIT_ZSH_NVIM_SCRIPT="${TMP_DIR}/install-zsh-nvim.sh"
 
 printf 'original sources\n' >"${TEST_SOURCES_LIST}"
 
-"${ROOT_DIR}/scripts/ubuntu-2204.sh" >"${TEST_OUTPUT}"
+"${ROOT_DIR}/scripts/ubuntu-2204.sh" --yes >"${TEST_OUTPUT}"
 
 expected="${TMP_DIR}/expected.log"
 cat >"${expected}" <<'EOF'
@@ -89,3 +90,61 @@ if grep -q $'\033' "${TEST_OUTPUT}"; then
     printf 'NO_COLOR output should not contain ANSI color codes\n' >&2
     exit 1
 fi
+
+: >"${TEST_LOG}"
+: >"${TEST_OUTPUT}"
+printf 'original sources\n' >"${TEST_SOURCES_LIST}"
+
+"${ROOT_DIR}/scripts/ubuntu-2204.sh" --yes --skip-upgrade --skip-zsh-nvim >"${TEST_OUTPUT}"
+
+cat >"${expected}" <<'EOF'
+sudo -v
+sudo cp SOURCE_LIST SOURCE_LIST.bak
+sudo tee SOURCE_LIST
+sudo apt-get clean
+sudo rm -rf /var/lib/apt/lists/*
+sudo apt-get update
+install-dev-tools
+EOF
+
+sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g" "${TEST_LOG}"
+diff -u "${expected}" "${TEST_LOG}"
+grep -F "[WARN] Skipping system package upgrade" "${TEST_OUTPUT}" >/dev/null
+grep -F "[WARN] Skipping zsh and neovim setup" "${TEST_OUTPUT}" >/dev/null
+
+: >"${TEST_LOG}"
+: >"${TEST_OUTPUT}"
+printf 'original sources\n' >"${TEST_SOURCES_LIST}"
+
+"${ROOT_DIR}/scripts/ubuntu-2204.sh" --yes --skip-dev-tools >"${TEST_OUTPUT}"
+
+cat >"${expected}" <<'EOF'
+sudo -v
+sudo cp SOURCE_LIST SOURCE_LIST.bak
+sudo tee SOURCE_LIST
+sudo apt-get clean
+sudo rm -rf /var/lib/apt/lists/*
+sudo apt-get update
+sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+install-zsh-nvim
+EOF
+
+sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g" "${TEST_LOG}"
+diff -u "${expected}" "${TEST_LOG}"
+grep -F "[WARN] Skipping development tools setup" "${TEST_OUTPUT}" >/dev/null
+
+: >"${TEST_LOG}"
+: >"${TEST_OUTPUT}"
+
+if printf 'n\n' | "${ROOT_DIR}/scripts/ubuntu-2204.sh" >"${TEST_OUTPUT}" 2>&1; then
+    printf 'Expected confirmation rejection to fail\n' >&2
+    exit 1
+fi
+
+if [[ -s "${TEST_LOG}" ]]; then
+    printf 'Confirmation rejection should not run privileged commands\n' >&2
+    exit 1
+fi
+
+grep -F "Continue? [y/N]" "${TEST_OUTPUT}" >/dev/null
+grep -F "[ERROR] Aborted by user." "${TEST_OUTPUT}" >/dev/null
