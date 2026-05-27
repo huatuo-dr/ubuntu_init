@@ -93,6 +93,7 @@ fi
 
 : >"${TEST_LOG}"
 : >"${TEST_OUTPUT}"
+rm -f "${TEST_SOURCES_BACKUP}"
 printf 'original sources\n' >"${TEST_SOURCES_LIST}"
 
 "${ROOT_DIR}/scripts/ubuntu-2204.sh" --yes --skip-upgrade --skip-zsh-nvim >"${TEST_OUTPUT}"
@@ -114,6 +115,7 @@ grep -F "[WARN] Skipping zsh and neovim setup" "${TEST_OUTPUT}" >/dev/null
 
 : >"${TEST_LOG}"
 : >"${TEST_OUTPUT}"
+rm -f "${TEST_SOURCES_BACKUP}"
 printf 'original sources\n' >"${TEST_SOURCES_LIST}"
 
 "${ROOT_DIR}/scripts/ubuntu-2204.sh" --yes --skip-dev-tools >"${TEST_OUTPUT}"
@@ -132,6 +134,26 @@ EOF
 sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 grep -F "[WARN] Skipping development tools setup" "${TEST_OUTPUT}" >/dev/null
+
+: >"${TEST_LOG}"
+: >"${TEST_OUTPUT}"
+printf 'original sources\n' >"${TEST_SOURCES_LIST}"
+printf 'existing backup\n' >"${TEST_SOURCES_BACKUP}"
+
+"${ROOT_DIR}/scripts/ubuntu-2204.sh" --yes --skip-upgrade --skip-dev-tools --skip-zsh-nvim >"${TEST_OUTPUT}"
+
+cat >"${expected}" <<'EOF'
+sudo -v
+sudo tee SOURCE_LIST
+sudo apt-get clean
+sudo rm -rf /var/lib/apt/lists/*
+sudo apt-get update
+EOF
+
+sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g" "${TEST_LOG}"
+diff -u "${expected}" "${TEST_LOG}"
+diff -u <(printf 'existing backup\n') "${TEST_SOURCES_BACKUP}"
+grep -F "[WARN] Apt sources backup already exists, keeping it:" "${TEST_OUTPUT}" >/dev/null
 
 : >"${TEST_LOG}"
 : >"${TEST_OUTPUT}"

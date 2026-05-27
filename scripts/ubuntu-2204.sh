@@ -151,7 +151,12 @@ start_sudo_keepalive() {
 setup_apt_sources() {
     info "Configuring Aliyun apt sources for Ubuntu 22.04"
 
-    sudo cp "${APT_SOURCES_LIST}" "${APT_SOURCES_LIST}.bak"
+    if [[ -f "${APT_SOURCES_LIST}.bak" ]]; then
+        warn "Apt sources backup already exists, keeping it: ${APT_SOURCES_LIST}.bak"
+    else
+        sudo cp "${APT_SOURCES_LIST}" "${APT_SOURCES_LIST}.bak"
+    fi
+
     sudo tee "${APT_SOURCES_LIST}" >/dev/null <<'EOF'
 deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse
 deb http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse
