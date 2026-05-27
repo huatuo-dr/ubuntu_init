@@ -36,11 +36,11 @@ printf 'install-dev-tools\n' >>"${TEST_LOG}"
 STUB
 chmod +x "${TMP_DIR}/install-dev-tools.sh"
 
-cat >"${TMP_DIR}/install-zsh-nvim.sh" <<'STUB'
+cat >"${TMP_DIR}/install-user-tools.sh" <<'STUB'
 #!/usr/bin/env bash
-printf 'install-zsh-nvim\n' >>"${TEST_LOG}"
+printf 'install-user-tools\n' >>"${TEST_LOG}"
 STUB
-chmod +x "${TMP_DIR}/install-zsh-nvim.sh"
+chmod +x "${TMP_DIR}/install-user-tools.sh"
 
 export TEST_LOG="${TMP_DIR}/calls.log"
 export TEST_OUTPUT="${TMP_DIR}/output.log"
@@ -51,7 +51,7 @@ export NO_COLOR=1
 export UBUNTU_INIT_DISABLE_SUDO_KEEPALIVE=1
 export UBUNTU_INIT_APT_SOURCES_LIST="${TEST_SOURCES_LIST}"
 export UBUNTU_INIT_DEV_TOOLS_SCRIPT="${TMP_DIR}/install-dev-tools.sh"
-export UBUNTU_INIT_ZSH_NVIM_SCRIPT="${TMP_DIR}/install-zsh-nvim.sh"
+export UBUNTU_INIT_USER_TOOLS_SCRIPT="${TMP_DIR}/install-user-tools.sh"
 
 printf 'original sources\n' >"${TEST_SOURCES_LIST}"
 
@@ -67,7 +67,7 @@ sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 install-dev-tools
-install-zsh-nvim
+install-user-tools
 EOF
 
 sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g" "${TEST_LOG}"
@@ -96,7 +96,7 @@ fi
 rm -f "${TEST_SOURCES_BACKUP}"
 printf 'original sources\n' >"${TEST_SOURCES_LIST}"
 
-"${ROOT_DIR}/scripts/ubuntu-2204.sh" --yes --skip-upgrade --skip-zsh-nvim >"${TEST_OUTPUT}"
+"${ROOT_DIR}/scripts/ubuntu-2204.sh" --yes --skip-upgrade --skip-user-tools >"${TEST_OUTPUT}"
 
 cat >"${expected}" <<'EOF'
 sudo -v
@@ -111,7 +111,7 @@ EOF
 sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 grep -F "[WARN] Skipping system package upgrade" "${TEST_OUTPUT}" >/dev/null
-grep -F "[WARN] Skipping zsh and neovim setup" "${TEST_OUTPUT}" >/dev/null
+grep -F "[WARN] Skipping user tools setup" "${TEST_OUTPUT}" >/dev/null
 
 : >"${TEST_LOG}"
 : >"${TEST_OUTPUT}"
@@ -128,7 +128,7 @@ sudo apt-get clean
 sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-install-zsh-nvim
+install-user-tools
 EOF
 
 sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g" "${TEST_LOG}"
@@ -140,7 +140,7 @@ grep -F "[WARN] Skipping development tools setup" "${TEST_OUTPUT}" >/dev/null
 printf 'original sources\n' >"${TEST_SOURCES_LIST}"
 printf 'existing backup\n' >"${TEST_SOURCES_BACKUP}"
 
-"${ROOT_DIR}/scripts/ubuntu-2204.sh" --yes --skip-upgrade --skip-dev-tools --skip-zsh-nvim >"${TEST_OUTPUT}"
+"${ROOT_DIR}/scripts/ubuntu-2204.sh" --yes --skip-upgrade --skip-dev-tools --skip-user-tools >"${TEST_OUTPUT}"
 
 cat >"${expected}" <<'EOF'
 sudo -v

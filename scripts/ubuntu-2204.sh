@@ -4,12 +4,12 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly APT_SOURCES_LIST="${UBUNTU_INIT_APT_SOURCES_LIST:-/etc/apt/sources.list}"
 readonly DEV_TOOLS_SCRIPT="${UBUNTU_INIT_DEV_TOOLS_SCRIPT:-${SCRIPT_DIR}/install-dev-tools.sh}"
-readonly ZSH_NVIM_SCRIPT="${UBUNTU_INIT_ZSH_NVIM_SCRIPT:-${SCRIPT_DIR}/install-zsh-nvim.sh}"
+readonly USER_TOOLS_SCRIPT="${UBUNTU_INIT_USER_TOOLS_SCRIPT:-${SCRIPT_DIR}/install-user-tools.sh}"
 
 ASSUME_YES=0
 SKIP_UPGRADE=0
 SKIP_DEV_TOOLS=0
-SKIP_ZSH_NVIM=0
+SKIP_USER_TOOLS=0
 SUDO_KEEPALIVE_PID=""
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
@@ -59,7 +59,7 @@ Options:
   -y, --yes          Run without interactive confirmation.
   --skip-upgrade    Skip system package upgrade.
   --skip-dev-tools  Skip development tools setup.
-  --skip-zsh-nvim   Skip zsh and neovim setup.
+  --skip-user-tools Skip user tools setup.
   -h, --help        Show this help message.
 EOF
 }
@@ -76,8 +76,8 @@ parse_args() {
             --skip-dev-tools)
                 SKIP_DEV_TOOLS=1
                 ;;
-            --skip-zsh-nvim)
-                SKIP_ZSH_NVIM=1
+            --skip-user-tools)
+                SKIP_USER_TOOLS=1
                 ;;
             -h | --help)
                 usage
@@ -215,10 +215,10 @@ main() {
         run_script "${DEV_TOOLS_SCRIPT}" "development tools setup"
     fi
 
-    if [[ "${SKIP_ZSH_NVIM}" == "1" ]]; then
-        warn "Skipping zsh and neovim setup"
+    if [[ "${SKIP_USER_TOOLS}" == "1" ]]; then
+        warn "Skipping user tools setup"
     else
-        run_script "${ZSH_NVIM_SCRIPT}" "zsh and neovim setup"
+        run_script "${USER_TOOLS_SCRIPT}" "user tools setup"
     fi
 
     success "Ubuntu 22.04 WSL initialization finished"

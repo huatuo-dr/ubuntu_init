@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Shell and editor setup.
+# User tools setup.
 # TODO: Move zsh, oh-my-zsh, powerlevel10k, tmux, and neovim setup steps here.
 
-echo "TODO: install zsh and neovim environment"
+echo "TODO: install user tools"
