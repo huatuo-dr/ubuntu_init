@@ -20,7 +20,13 @@ chmod +x "${TMP_DIR}/bin/sudo"
 cat >"${TMP_DIR}/bin/curl" <<'STUB'
 #!/usr/bin/env bash
 printf 'curl %s\n' "$*" >>"${TEST_LOG}"
-printf '# nodesource setup stub\n'
+while (($#)); do
+    if [[ "$1" == "-o" ]]; then
+        printf '# nodesource setup stub\n' >"$2"
+        exit 0
+    fi
+    shift
+done
 STUB
 chmod +x "${TMP_DIR}/bin/curl"
 
@@ -46,8 +52,8 @@ sudo add-apt-repository -y ppa:deadsnakes/ppa
 sudo apt-get update
 sudo apt-get install -y python3-pip python3.12 python3.12-venv python3.10-venv aptitude build-essential libsystemd-dev lib32stdc++6 clangd ripgrep fd-find neofetch curl net-tools lcov bear tofrodos vim xclip ninja-build cmake openssh-server fzf autoconf universal-ctags
 sudo ln -s python3.12 PYTHON_LINK
-curl -fsSL https://deb.nodesource.com/setup_current.x
-sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_current.x -o NODE_SETUP
+sudo -E bash NODE_SETUP
 sudo apt-get install -y nodejs
 sudo npm install n -g
 sudo n stable
@@ -55,7 +61,7 @@ sudo npm install -g yarn
 git config --global core.excludesfile HOME/.gitignore_global
 EOF
 
-sed -i "s|${UBUNTU_INIT_PYTHON_LINK}|PYTHON_LINK|g; s|${HOME}|HOME|g" "${TEST_LOG}"
+sed -i "s|${UBUNTU_INIT_PYTHON_LINK}|PYTHON_LINK|g; s|${HOME}|HOME|g; s|/tmp/tmp\\.[^ ]*|NODE_SETUP|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 
 [[ -d "${HOME}/.ssh" ]]

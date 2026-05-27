@@ -84,8 +84,14 @@ configure_python() {
 }
 
 install_node() {
+    local setup_script
+
     info "Installing Node.js and Yarn"
-    curl -fsSL https://deb.nodesource.com/setup_current.x | sudo -E bash -
+    setup_script="$(mktemp)"
+    curl -fsSL https://deb.nodesource.com/setup_current.x -o "${setup_script}"
+    sudo -E bash "${setup_script}"
+    rm -f "${setup_script}"
+
     sudo apt-get install -y nodejs
     sudo npm install n -g
     sudo n stable
