@@ -59,7 +59,13 @@ if [[ "$1" == "tee" ]]; then
 fi
 
 if [[ "$1" == "install" ]]; then
-    cp "$2" "${TMP_DIR}/installed-lazygit"
+    if [[ "${2:-}" == "-m" ]]; then
+        cp "$4" "$5"
+    elif [[ "$*" == *"YAZI_KEYRING"* || "${3:-}" == "${TEST_YAZI_KEYRING}" ]]; then
+        cp "$2" "${TEST_YAZI_KEYRING}"
+    else
+        cp "$2" "${TMP_DIR}/installed-lazygit"
+    fi
 fi
 STUB
 chmod +x "${TMP_DIR}/bin/sudo"
@@ -104,7 +110,8 @@ touch "${TEST_LOG}"
 expected="${TMP_DIR}/expected.log"
 cat >"${expected}" <<'EOF'
 curl -sS https://debian.griffo.io/EA0F721D231FDD3A0A17B9AC7808B4DD62C41256.asc -o YAZI_KEY
-gpg --dearmor --yes -o YAZI_KEYRING YAZI_KEY
+gpg --dearmor --yes -o YAZI_KEY YAZI_KEY
+sudo install -m 0644 YAZI_KEY YAZI_KEYRING
 sudo tee YAZI_SOURCE_LIST
 sudo apt-get update
 sudo apt-get install -y yazi file ffmpeg jq poppler-utils p7zip-full zoxide

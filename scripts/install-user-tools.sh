@@ -46,15 +46,18 @@ warn() {
 configure_yazi_repository() {
     local codename
     local key_file
+    local keyring_file
 
     if [[ -f "${YAZI_KEYRING}" ]]; then
         warn "Yazi repository key already exists, keeping it: ${YAZI_KEYRING}"
     else
         info "Installing Yazi repository key"
         key_file="$(mktemp)"
+        keyring_file="$(mktemp)"
         curl -sS https://debian.griffo.io/EA0F721D231FDD3A0A17B9AC7808B4DD62C41256.asc -o "${key_file}"
-        gpg --dearmor --yes -o "${YAZI_KEYRING}" "${key_file}"
-        rm -f "${key_file}"
+        gpg --dearmor --yes -o "${keyring_file}" "${key_file}"
+        sudo install -m 0644 "${keyring_file}" "${YAZI_KEYRING}"
+        rm -f "${key_file}" "${keyring_file}"
     fi
 
     if [[ -f "${YAZI_SOURCE_LIST}" ]]; then
