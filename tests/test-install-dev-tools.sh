@@ -79,6 +79,14 @@ chmod +x "${TMP_DIR}/bin/git"
 cat >"${TMP_DIR}/bin/npm" <<'STUB'
 #!/usr/bin/env bash
 printf 'npm %s\n' "$*" >>"${TEST_LOG}"
+if [[ "$*" == "install n -g" ]]; then
+    /usr/bin/mkdir -p "${HOME}/.npm-global/bin"
+    cat >"${HOME}/.npm-global/bin/n" <<'NSTUB'
+#!/usr/bin/env bash
+printf '%s %s\n' "$0" "$*" >>"${TEST_LOG}"
+NSTUB
+    chmod +x "${HOME}/.npm-global/bin/n"
+fi
 STUB
 chmod +x "${TMP_DIR}/bin/npm"
 
@@ -133,7 +141,8 @@ sudo apt-get install -y nodejs
 mkdir -p HOME/.npm-global
 npm config set prefix ~/.npm-global
 npm install n -g
-sudo n stable
+mkdir -p HOME/.local
+HOME/.npm-global/bin/n stable
 npm install -g yarn
 curl -fsSL https://bazel.build/bazelisk.sh -o BAZELISK_SETUP
 sudo apt-get remove -y docker docker-engine docker.io containerd runc docker-compose docker-compose-plugin

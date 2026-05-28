@@ -38,6 +38,11 @@ warn() {
     log "${COLOR_YELLOW}" "WARN" "$*"
 }
 
+die() {
+    printf "[ERROR] %s\n" "$*" >&2
+    exit 1
+}
+
 install_apt_packages() {
     local packages=(
         python3-pip
@@ -88,6 +93,8 @@ configure_python() {
 }
 
 install_node() {
+    local n_command="${HOME}/.npm-global/bin/n"
+    local n_prefix="${HOME}/.local"
     local setup_script
 
     info "Installing Node.js and Yarn"
@@ -100,7 +107,12 @@ install_node() {
     mkdir -p "${HOME}/.npm-global"
     npm config set prefix '~/.npm-global'
     npm install n -g
-    sudo n stable
+    if [[ ! -x "${n_command}" ]]; then
+        die "n was not installed at expected path: ${n_command}"
+    fi
+    mkdir -p "${n_prefix}"
+    N_PREFIX="${n_prefix}" "${n_command}" stable
+    export PATH="${n_prefix}/bin:${PATH}"
     npm install -g yarn
 }
 
