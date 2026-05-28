@@ -7,6 +7,9 @@ readonly DOCKER_SOURCE_LIST="${UBUNTU_INIT_DOCKER_SOURCE_LIST:-/etc/apt/sources.
 readonly DOCKER_DAEMON_JSON="${UBUNTU_INIT_DOCKER_DAEMON_JSON:-/etc/docker/daemon.json}"
 readonly BAZELISK_BIN="${UBUNTU_INIT_BAZELISK_BIN:-/usr/local/bin/bazelisk}"
 readonly BAZEL_BIN="${UBUNTU_INIT_BAZEL_BIN:-/usr/local/bin/bazel}"
+readonly POLICY_RC_D="${UBUNTU_INIT_POLICY_RC_D:-/usr/sbin/policy-rc.d}"
+
+POLICY_RC_D_CREATED=0
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
     readonly COLOR_BLUE=$'\033[34m'
@@ -45,6 +48,30 @@ die() {
     exit 1
 }
 
+disable_service_autostart() {
+    if [[ -e "${POLICY_RC_D}" ]]; then
+        warn "policy-rc.d already exists, keeping it: ${POLICY_RC_D}"
+        return
+    fi
+
+    info "Temporarily disabling service autostart during apt installation"
+    sudo tee "${POLICY_RC_D}" >/dev/null <<'EOF'
+#!/bin/sh
+exit 101
+EOF
+    sudo chmod +x "${POLICY_RC_D}"
+    POLICY_RC_D_CREATED=1
+}
+
+restore_service_autostart() {
+    if [[ "${POLICY_RC_D_CREATED}" != "1" ]]; then
+        return
+    fi
+
+    sudo rm -f "${POLICY_RC_D}"
+    POLICY_RC_D_CREATED=0
+}
+
 install_apt_packages() {
     local packages=(
         python3-pip
@@ -75,6 +102,9 @@ install_apt_packages() {
         universal-ctags
     )
 
+    disable_service_autostart
+    trap restore_service_autostart EXIT
+
     info "Installing Python repository prerequisites"
     sudo apt-get install -y software-properties-common
     sudo add-apt-repository -y ppa:deadsnakes/ppa
@@ -82,6 +112,8 @@ install_apt_packages() {
 
     info "Installing common development packages"
     sudo apt-get install -y "${packages[@]}"
+    restore_service_autostart
+    trap - EXIT
 }
 
 configure_python() {

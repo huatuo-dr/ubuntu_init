@@ -26,6 +26,10 @@ fi
 if [[ "$1" == "tee" ]]; then
     cat >"$2"
 fi
+
+if [[ "$1" == "rm" && "$2" == "-f" ]]; then
+    rm -f "$3"
+fi
 STUB
 chmod +x "${TMP_DIR}/bin/sudo"
 
@@ -126,16 +130,20 @@ export UBUNTU_INIT_DOCKER_SOURCE_LIST="${TMP_DIR}/sources/docker.list"
 export UBUNTU_INIT_DOCKER_DAEMON_JSON="${TMP_DIR}/docker/daemon.json"
 export UBUNTU_INIT_BAZELISK_BIN="${TMP_DIR}/bin/bazelisk"
 export UBUNTU_INIT_BAZEL_BIN="${TMP_DIR}/bin/bazel"
+export UBUNTU_INIT_POLICY_RC_D="${TMP_DIR}/policy-rc.d"
 
 touch "${TEST_LOG}"
 "${ROOT_DIR}/scripts/install-dev-tools.sh" >"${TMP_DIR}/output.log"
 
 expected="${TMP_DIR}/expected.log"
 cat >"${expected}" <<'EOF'
+sudo tee POLICY_RC_D
+sudo chmod +x POLICY_RC_D
 sudo apt-get install -y software-properties-common
 sudo add-apt-repository -y ppa:deadsnakes/ppa
 sudo apt-get update
 sudo apt-get install -y python3-pip python3.12 python3.12-venv python3.10-venv aptitude build-essential libsystemd-dev lib32stdc++6 clangd ripgrep fd-find neofetch curl gnupg net-tools lcov bear tofrodos vim xclip ninja-build cmake openssh-server fzf autoconf universal-ctags
+sudo rm -f POLICY_RC_D
 sudo ln -s python3.12 PYTHON_LINK
 curl -fsSL https://deb.nodesource.com/setup_current.x -o NODE_SETUP
 sudo -E bash NODE_SETUP
@@ -191,6 +199,7 @@ sed -i "s|${UBUNTU_INIT_DOCKER_SOURCE_LIST}|DOCKER_SOURCE_LIST|g; s|$(dirname "$
 sed -i "s|${UBUNTU_INIT_DOCKER_DAEMON_JSON}|DOCKER_DAEMON_JSON|g; s|$(dirname "${UBUNTU_INIT_DOCKER_DAEMON_JSON}")|DOCKER_DAEMON_DIR|g" "${TEST_LOG}"
 sed -i "s|${UBUNTU_INIT_DOCKER_KEYRING}|DOCKER_KEYRING|g; s|$(dirname "${UBUNTU_INIT_DOCKER_KEYRING}")|DOCKER_KEYRING_DIR|g" "${TEST_LOG}"
 sed -i "s|${UBUNTU_INIT_BAZELISK_BIN}|BAZELISK_BIN|g; s|${UBUNTU_INIT_BAZEL_BIN}|BAZEL_BIN|g" "${TEST_LOG}"
+sed -i "s|${UBUNTU_INIT_POLICY_RC_D}|POLICY_RC_D|g" "${TEST_LOG}"
 sed -i "s|${USER}|TEST_USER|g" "${TEST_LOG}"
 sed -i -E 's|(https://deb.nodesource.com/setup_current.x -o )/tmp/tmp\.[^ ]+|\1NODE_SETUP|g' "${TEST_LOG}"
 sed -i -E 's|(https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64 -o )/tmp/tmp\.[^ ]+|\1BAZELISK_BIN_TMP|g' "${TEST_LOG}"
@@ -207,6 +216,7 @@ diff -u "${expected}" "${TEST_LOG}"
 [[ -f "${HOME}/.ssh/id_rsa" ]]
 grep -F "https://mirrors.aliyun.com/docker-ce/linux/ubuntu jammy stable" "${UBUNTU_INIT_DOCKER_SOURCE_LIST}" >/dev/null
 grep -F "https://mirror.aliyuncs.com" "${UBUNTU_INIT_DOCKER_DAEMON_JSON}" >/dev/null
+[[ ! -e "${UBUNTU_INIT_POLICY_RC_D}" ]]
 grep -Fx ".tags" "${HOME}/.gitignore_global" >/dev/null
 
 : >"${TEST_LOG}"
