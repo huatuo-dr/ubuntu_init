@@ -3,6 +3,7 @@ set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly APT_SOURCES_LIST="${UBUNTU_INIT_APT_SOURCES_LIST:-/etc/apt/sources.list}"
+readonly WSL_CONF="${UBUNTU_INIT_WSL_CONF:-/etc/wsl.conf}"
 readonly DEV_TOOLS_SCRIPT="${UBUNTU_INIT_DEV_TOOLS_SCRIPT:-${SCRIPT_DIR}/install-dev-tools.sh}"
 readonly USER_TOOLS_SCRIPT="${UBUNTU_INIT_USER_TOOLS_SCRIPT:-${SCRIPT_DIR}/install-user-tools.sh}"
 
@@ -115,6 +116,7 @@ confirm_execution() {
 
     cat <<EOF
 This script will:
+  - disable appending Windows PATH in WSL
   - configure Aliyun apt sources
   - clean apt cache and package lists
   - update apt package lists
@@ -148,6 +150,24 @@ start_sudo_keepalive() {
     trap stop_sudo_keepalive EXIT
 }
 
+configure_wsl_interop() {
+    info "Configuring WSL interop"
+
+    if [[ -f "${WSL_CONF}" ]] && grep -Fxq "appendWindowsPath = false" "${WSL_CONF}"; then
+        warn "WSL Windows PATH interop is already disabled: ${WSL_CONF}"
+        return
+    fi
+
+    {
+        if [[ -f "${WSL_CONF}" ]]; then
+            cat "${WSL_CONF}"
+            printf "\n"
+        fi
+        printf "[interop]\n"
+        printf "appendWindowsPath = false\n"
+    } | sudo tee "${WSL_CONF}" >/dev/null
+}
+
 setup_apt_sources() {
     info "Configuring Aliyun apt sources for Ubuntu 22.04"
 
@@ -175,6 +195,60 @@ EOF
 upgrade_system_packages() {
     info "Upgrading system packages"
     sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+}
+
+install_system_build_packages() {
+    local packages=(
+        zlib1g-dev
+        libbz2-dev
+        libssl-dev
+        libncurses5-dev
+        libsqlite3-dev
+        libreadline-dev
+        tk-dev
+        libgdbm-dev
+        libdb-dev
+        libpcap-dev
+        xz-utils
+        libexpat1-dev
+        lib32ncurses5
+        u-boot-tools
+        mtd-utils
+        scons
+        libffi-dev
+        zip
+        lib32gcc1
+        libc6-dev-i386
+        libc6-i386
+        libc6-dev
+        liblzma-dev
+        lib32z1
+        libstdc++6
+        libstdc++-11-dev
+        gcc-multilib
+        g++-multilib
+        squashfs-tools
+        bison
+        bc
+        flex
+        kmod
+        unzip
+        p7zip-full
+        rsync
+        lzma
+        imagemagick
+        cpio
+        lzop
+        libboost-all-dev
+    )
+
+    info "Installing system build and embedded development packages"
+    sudo apt-get install -y "${packages[@]}"
+}
+
+configure_user_groups() {
+    info "Adding current user to dialout group"
+    sudo usermod -a -G dialout "${USER}"
 }
 
 install_tree_sitter_cli() {
@@ -212,12 +286,16 @@ main() {
     info "Ubuntu 22.04 WSL initialization starts"
     info "Script directory: ${SCRIPT_DIR}"
 
+    configure_wsl_interop
     setup_apt_sources
     if [[ "${SKIP_UPGRADE}" == "1" ]]; then
         warn "Skipping system package upgrade"
     else
         upgrade_system_packages
     fi
+
+    install_system_build_packages
+    configure_user_groups
 
     if [[ "${SKIP_DEV_TOOLS}" == "1" ]]; then
         warn "Skipping development tools setup"

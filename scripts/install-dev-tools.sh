@@ -106,13 +106,25 @@ configure_ssh() {
     chmod 700 "${HOME}/.ssh"
     touch "${HOME}/.ssh/authorized_keys"
     chmod 600 "${HOME}/.ssh/authorized_keys"
+
+    if [[ -f "${HOME}/.ssh/id_ed25519" ]]; then
+        warn "SSH ed25519 key already exists, keeping it: ${HOME}/.ssh/id_ed25519"
+    else
+        ssh-keygen -t ed25519 -f "${HOME}/.ssh/id_ed25519" -N ""
+    fi
 }
 
-configure_git_ignore() {
+configure_git() {
     local gitignore_file="${HOME}/.gitignore_global"
 
     info "Configuring global git ignore"
     git config --global core.excludesfile "${gitignore_file}"
+    git config --global core.editor vim
+    git config --global core.autocrlf false
+    git config --global color.ui auto
+    git config --global credential.helper store
+    git config --global core.quotepath false
+    git config --global http.postBuffer 524288000
     touch "${gitignore_file}"
 
     if ! grep -Fxq ".tags" "${gitignore_file}"; then
@@ -120,12 +132,20 @@ configure_git_ignore() {
     fi
 }
 
+install_python_packages() {
+    info "Installing Python packages"
+    pip3 install pycryptodome
+    pip3 install ecdsa
+    pip3 install uv
+}
+
 main() {
     install_apt_packages
     configure_python
     install_node
     configure_ssh
-    configure_git_ignore
+    configure_git
+    install_python_packages
 
     success "Common development tools setup finished"
 }

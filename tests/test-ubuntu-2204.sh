@@ -22,7 +22,11 @@ if [[ "$1" == "cp" ]]; then
 fi
 
 if [[ "$1" == "tee" ]]; then
-    cat >"${TEST_SOURCES_LIST}"
+    if [[ "${2:-}" == "${TEST_WSL_CONF}" ]]; then
+        cat >"${TEST_WSL_CONF}"
+    else
+        cat >"${TEST_SOURCES_LIST}"
+    fi
     exit 0
 fi
 
@@ -53,10 +57,12 @@ export TEST_LOG="${TMP_DIR}/calls.log"
 export TEST_OUTPUT="${TMP_DIR}/output.log"
 export TEST_SOURCES_LIST="${TMP_DIR}/sources.list"
 export TEST_SOURCES_BACKUP="${TMP_DIR}/sources.list.bak"
+export TEST_WSL_CONF="${TMP_DIR}/wsl.conf"
 export PATH="${TMP_DIR}/bin:${PATH}"
 export NO_COLOR=1
 export UBUNTU_INIT_DISABLE_SUDO_KEEPALIVE=1
 export UBUNTU_INIT_APT_SOURCES_LIST="${TEST_SOURCES_LIST}"
+export UBUNTU_INIT_WSL_CONF="${TEST_WSL_CONF}"
 export UBUNTU_INIT_DEV_TOOLS_SCRIPT="${TMP_DIR}/install-dev-tools.sh"
 export UBUNTU_INIT_USER_TOOLS_SCRIPT="${TMP_DIR}/install-user-tools.sh"
 
@@ -67,20 +73,25 @@ printf 'original sources\n' >"${TEST_SOURCES_LIST}"
 expected="${TMP_DIR}/expected.log"
 cat >"${expected}" <<'EOF'
 sudo -v
+sudo tee WSL_CONF
 sudo cp SOURCE_LIST SOURCE_LIST.bak
 sudo tee SOURCE_LIST
 sudo apt-get clean
 sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses5 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
+sudo usermod -a -G dialout USER_NAME
 install-dev-tools
 npm install -g tree-sitter-cli@0.22.6
 install-user-tools
 EOF
 
-sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g" "${TEST_LOG}"
+sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|${USER}|USER_NAME|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 diff -u <(printf 'original sources\n') "${TEST_SOURCES_BACKUP}"
+grep -F "[interop]" "${TEST_WSL_CONF}" >/dev/null
+grep -F "appendWindowsPath = false" "${TEST_WSL_CONF}" >/dev/null
 
 grep -F "deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse" "${TEST_SOURCES_LIST}" >/dev/null
 grep -F "deb http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse" "${TEST_SOURCES_LIST}" >/dev/null
@@ -113,10 +124,12 @@ sudo tee SOURCE_LIST
 sudo apt-get clean
 sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get update
+sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses5 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
+sudo usermod -a -G dialout USER_NAME
 install-dev-tools
 EOF
 
-sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g" "${TEST_LOG}"
+sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|${USER}|USER_NAME|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 grep -F "[WARN] Skipping system package upgrade" "${TEST_OUTPUT}" >/dev/null
 grep -F "[WARN] Skipping user tools setup" "${TEST_OUTPUT}" >/dev/null
@@ -136,11 +149,13 @@ sudo apt-get clean
 sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses5 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
+sudo usermod -a -G dialout USER_NAME
 npm install -g tree-sitter-cli@0.22.6
 install-user-tools
 EOF
 
-sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g" "${TEST_LOG}"
+sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|${USER}|USER_NAME|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 grep -F "[WARN] Skipping development tools setup" "${TEST_OUTPUT}" >/dev/null
 
@@ -157,9 +172,11 @@ sudo tee SOURCE_LIST
 sudo apt-get clean
 sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get update
+sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses5 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
+sudo usermod -a -G dialout USER_NAME
 EOF
 
-sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g" "${TEST_LOG}"
+sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|${USER}|USER_NAME|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 diff -u <(printf 'existing backup\n') "${TEST_SOURCES_BACKUP}"
 grep -F "[WARN] Apt sources backup already exists, keeping it:" "${TEST_OUTPUT}" >/dev/null

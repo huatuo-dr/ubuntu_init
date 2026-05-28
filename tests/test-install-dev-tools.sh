@@ -42,6 +42,25 @@ printf 'npm %s\n' "$*" >>"${TEST_LOG}"
 STUB
 chmod +x "${TMP_DIR}/bin/npm"
 
+cat >"${TMP_DIR}/bin/pip3" <<'STUB'
+#!/usr/bin/env bash
+printf 'pip3 %s\n' "$*" >>"${TEST_LOG}"
+STUB
+chmod +x "${TMP_DIR}/bin/pip3"
+
+cat >"${TMP_DIR}/bin/ssh-keygen" <<'STUB'
+#!/usr/bin/env bash
+printf 'ssh-keygen %s\n' "$*" >>"${TEST_LOG}"
+while (($#)); do
+    if [[ "$1" == "-f" ]]; then
+        touch "$2" "$2.pub"
+        exit 0
+    fi
+    shift
+done
+STUB
+chmod +x "${TMP_DIR}/bin/ssh-keygen"
+
 cat >"${TMP_DIR}/bin/mkdir" <<'STUB'
 #!/usr/bin/env bash
 printf 'mkdir %s\n' "$*" >>"${TEST_LOG}"
@@ -74,7 +93,17 @@ npm install n -g
 sudo n stable
 npm install -g yarn
 mkdir -p HOME/.ssh
+ssh-keygen -t ed25519 -f HOME/.ssh/id_ed25519 -N 
 git config --global core.excludesfile HOME/.gitignore_global
+git config --global core.editor vim
+git config --global core.autocrlf false
+git config --global color.ui auto
+git config --global credential.helper store
+git config --global core.quotepath false
+git config --global http.postBuffer 524288000
+pip3 install pycryptodome
+pip3 install ecdsa
+pip3 install uv
 EOF
 
 sed -i "s|${UBUNTU_INIT_PYTHON_LINK}|PYTHON_LINK|g; s|${HOME}|HOME|g; s|/tmp/tmp\\.[^ ]*|NODE_SETUP|g" "${TEST_LOG}"
@@ -82,6 +111,7 @@ diff -u "${expected}" "${TEST_LOG}"
 
 [[ -d "${HOME}/.ssh" ]]
 [[ -f "${HOME}/.ssh/authorized_keys" ]]
+[[ -f "${HOME}/.ssh/id_ed25519" ]]
 grep -Fx ".tags" "${HOME}/.gitignore_global" >/dev/null
 
 : >"${TEST_LOG}"
@@ -89,6 +119,11 @@ grep -Fx ".tags" "${HOME}/.gitignore_global" >/dev/null
 
 if grep -F "sudo ln -s python3.12 PYTHON_LINK" "${TEST_LOG}" >/dev/null; then
     printf 'python symlink should not be recreated when it already exists\n' >&2
+    exit 1
+fi
+
+if grep -F "ssh-keygen -t ed25519" "${TEST_LOG}" >/dev/null; then
+    printf 'SSH key should not be regenerated when it already exists\n' >&2
     exit 1
 fi
 
