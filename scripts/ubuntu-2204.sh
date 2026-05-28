@@ -177,6 +177,16 @@ upgrade_system_packages() {
     sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 }
 
+install_tree_sitter_cli() {
+    if ! command -v npm >/dev/null 2>&1; then
+        warn "npm is not available, skipping tree-sitter-cli installation"
+        return
+    fi
+
+    info "Installing tree-sitter-cli for Ubuntu 22.04"
+    npm install -g tree-sitter-cli@0.22.6
+}
+
 run_script() {
     local script_path="$1"
     local script_name="$2"
@@ -218,6 +228,7 @@ main() {
     if [[ "${SKIP_USER_TOOLS}" == "1" ]]; then
         warn "Skipping user tools setup"
     else
+        install_tree_sitter_cli
         run_script "${USER_TOOLS_SCRIPT}" "user tools setup"
     fi
 

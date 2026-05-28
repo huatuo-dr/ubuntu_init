@@ -93,9 +93,11 @@ install_node() {
     rm -f "${setup_script}"
 
     sudo apt-get install -y nodejs
-    sudo npm install n -g
+    mkdir -p "${HOME}/.npm-global"
+    npm config set prefix '~/.npm-global'
+    npm install n -g
     sudo n stable
-    sudo npm install -g yarn
+    npm install -g yarn
 }
 
 configure_ssh() {

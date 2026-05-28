@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly YAZI_KEYRING="${UBUNTU_INIT_YAZI_KEYRING:-/etc/apt/trusted.gpg.d/debian.griffo.io.gpg}"
 readonly YAZI_SOURCE_LIST="${UBUNTU_INIT_YAZI_SOURCE_LIST:-/etc/apt/sources.list.d/debian.griffo.io.list}"
 readonly OH_MY_ZSH_DIR="${UBUNTU_INIT_OH_MY_ZSH_DIR:-${HOME}/.oh-my-zsh}"
@@ -8,8 +9,10 @@ readonly ZSH_CUSTOM_DIR="${ZSH_CUSTOM:-${OH_MY_ZSH_DIR}/custom}"
 readonly TMUX_CONFIG_REPO="${UBUNTU_INIT_TMUX_CONFIG_REPO:-https://github.com/KyleDeng/tmux.conf}"
 readonly TMUX_CONFIG_DIR="${UBUNTU_INIT_TMUX_CONFIG_DIR:-${HOME}/.cache/ubuntu-init/tmux.conf}"
 readonly NVIM_CONFIG_REPO="${UBUNTU_INIT_NVIM_CONFIG_REPO:-https://github.com/KyleDeng/nvim.git}"
+readonly NVIM_CONFIG_BRANCH="${UBUNTU_INIT_NVIM_CONFIG_BRANCH:-ver-0.12.0}"
 readonly NVIM_CONFIG_DIR="${UBUNTU_INIT_NVIM_CONFIG_DIR:-${HOME}/.config/nvim}"
 readonly LAZYGIT_COMMAND="${UBUNTU_INIT_LAZYGIT_COMMAND:-lazygit}"
+readonly USER_ZSHRC="${UBUNTU_INIT_USER_ZSHRC:-${SCRIPT_DIR}/user.zshrc}"
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
     readonly COLOR_BLUE=$'\033[34m'
@@ -93,12 +96,18 @@ install_terminal_packages() {
         zsh
         powerline
         tmux
-        neovim
         git
     )
 
     info "Installing terminal and editor packages"
     sudo apt-get install -y "${packages[@]}"
+}
+
+install_neovim() {
+    info "Installing neovim"
+    sudo add-apt-repository -y ppa:neovim-ppa/unstable
+    sudo apt-get update
+    sudo apt-get install -y neovim
 }
 
 clone_if_missing() {
@@ -156,18 +165,29 @@ configure_zshrc() {
         printf 'plugins=(git z zsh-syntax-highlighting zsh-autosuggestions)\n' >>"${zshrc}"
     fi
 
-    append_zshrc_line 'export PATH=$PATH:$HOME/.local/bin/'
-    append_zshrc_line 'alias lg="lazygit"'
-    append_zshrc_line "export EDITOR='vim'"
 }
 
-append_zshrc_line() {
-    local line="$1"
+append_user_zshrc() {
     local zshrc="${HOME}/.zshrc"
 
-    if ! grep -Fxq "${line}" "${zshrc}"; then
-        printf "%s\n" "${line}" >>"${zshrc}"
+    info "Appending user .zshrc block"
+    touch "${zshrc}"
+
+    if [[ ! -f "${USER_ZSHRC}" ]]; then
+        warn "user.zshrc not found, skipping append: ${USER_ZSHRC}"
+        return
     fi
+
+    if grep -Fxq '# >>> ubuntu_init user.zshrc >>>' "${zshrc}"; then
+        warn "user.zshrc block already exists, keeping it: ${zshrc}"
+        return
+    fi
+
+    {
+        printf "\n# >>> ubuntu_init user.zshrc >>>\n"
+        cat "${USER_ZSHRC}"
+        printf "\n# <<< ubuntu_init user.zshrc <<<\n"
+    } >>"${zshrc}"
 }
 
 install_tmux_config() {
@@ -215,7 +235,7 @@ install_lazygit() {
 install_neovim_config() {
     info "Installing neovim config"
     mkdir -p "$(dirname "${NVIM_CONFIG_DIR}")"
-    clone_if_missing "${NVIM_CONFIG_REPO}" "${NVIM_CONFIG_DIR}"
+    clone_if_missing "${NVIM_CONFIG_REPO}" "${NVIM_CONFIG_DIR}" -b "${NVIM_CONFIG_BRANCH}"
 
     if [[ -d "${HOME}/.local/share/nvim/lazy/coc.nvim" ]]; then
         (
@@ -228,14 +248,27 @@ install_neovim_config() {
     fi
 }
 
+print_manual_steps() {
+    info "Optional manual steps"
+    cat <<'EOF'
+If you want zsh to be the default login shell, run:
+  chsh -s "$(command -v zsh)"
+
+Restart the WSL instance after changing the default shell.
+EOF
+}
+
 main() {
     install_yazi
     install_terminal_packages
+    install_neovim
     install_oh_my_zsh
     configure_zshrc
     install_tmux_config
     install_lazygit
     install_neovim_config
+    append_user_zshrc
+    print_manual_steps
 
     success "User tools setup finished"
 }

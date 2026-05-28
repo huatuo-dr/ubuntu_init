@@ -102,7 +102,9 @@ export NO_COLOR=1
 export UBUNTU_INIT_YAZI_KEYRING="${TEST_YAZI_KEYRING}"
 export UBUNTU_INIT_YAZI_SOURCE_LIST="${TEST_YAZI_SOURCE_LIST}"
 export UBUNTU_INIT_NVIM_CONFIG_REPO="https://github.com/example/nvim.git"
+export UBUNTU_INIT_NVIM_CONFIG_BRANCH="ver-0.12.0"
 export UBUNTU_INIT_LAZYGIT_COMMAND="test-lazygit"
+export UBUNTU_INIT_USER_ZSHRC="${ROOT_DIR}/scripts/user.zshrc"
 
 touch "${TEST_LOG}"
 "${ROOT_DIR}/scripts/install-user-tools.sh" >"${TMP_DIR}/output.log"
@@ -115,7 +117,10 @@ sudo install -m 0644 YAZI_KEY YAZI_KEYRING
 sudo tee YAZI_SOURCE_LIST
 sudo apt-get update
 sudo apt-get install -y yazi file ffmpeg jq poppler-utils p7zip-full zoxide
-sudo apt-get install -y zsh powerline tmux neovim git
+sudo apt-get install -y zsh powerline tmux git
+sudo add-apt-repository -y ppa:neovim-ppa/unstable
+sudo apt-get update
+sudo apt-get install -y neovim
 curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh
 git clone https://github.com/zsh-users/zsh-autosuggestions HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
@@ -125,17 +130,20 @@ curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest
 curl -Lo lazygit.tar.gz https://github.com/jesseduffield/lazygit/releases/download/v0.44.1/lazygit_0.44.1_Linux_x86_64.tar.gz
 tar xf lazygit.tar.gz lazygit
 sudo install lazygit -D -t /usr/local/bin/
-git clone https://github.com/example/nvim.git HOME/.config/nvim
+git clone -b ver-0.12.0 https://github.com/example/nvim.git HOME/.config/nvim
 EOF
 
 sed -i "s|${TEST_YAZI_KEYRING}|YAZI_KEYRING|g; s|${TEST_YAZI_SOURCE_LIST}|YAZI_SOURCE_LIST|g; s|${HOME}|HOME|g; s|/tmp/tmp\\.[^ ]*|YAZI_KEY|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 grep -F "deb https://debian.griffo.io/apt jammy main" "${TEST_YAZI_SOURCE_LIST}" >/dev/null
 grep -F "[OK] User tools setup finished" "${TMP_DIR}/output.log" >/dev/null
-grep -F 'export PATH=$PATH:$HOME/.local/bin/' "${HOME}/.zshrc" >/dev/null
-grep -F 'alias lg="lazygit"' "${HOME}/.zshrc" >/dev/null
+grep -F "[INFO] Optional manual steps" "${TMP_DIR}/output.log" >/dev/null
+grep -F 'chsh -s "$(command -v zsh)"' "${TMP_DIR}/output.log" >/dev/null
 grep -F 'ZSH_THEME="powerlevel10k/powerlevel10k"' "${HOME}/.zshrc" >/dev/null
 grep -F 'plugins=(git z zsh-syntax-highlighting zsh-autosuggestions)' "${HOME}/.zshrc" >/dev/null
+grep -F '# >>> ubuntu_init user.zshrc >>>' "${HOME}/.zshrc" >/dev/null
+grep -F '# User Configure' "${HOME}/.zshrc" >/dev/null
+grep -F '# <<< ubuntu_init user.zshrc <<<' "${HOME}/.zshrc" >/dev/null
 
 printf 'local tmux config\n' >"${HOME}/.tmux.conf"
 
@@ -151,7 +159,10 @@ chmod +x "${TMP_DIR}/bin/test-lazygit"
 cat >"${expected}" <<'EOF'
 sudo apt-get update
 sudo apt-get install -y yazi file ffmpeg jq poppler-utils p7zip-full zoxide
-sudo apt-get install -y zsh powerline tmux neovim git
+sudo apt-get install -y zsh powerline tmux git
+sudo add-apt-repository -y ppa:neovim-ppa/unstable
+sudo apt-get update
+sudo apt-get install -y neovim
 EOF
 
 sed -i "s|${TEST_YAZI_KEYRING}|YAZI_KEYRING|g; s|${TEST_YAZI_SOURCE_LIST}|YAZI_SOURCE_LIST|g; s|${HOME}|HOME|g" "${TEST_LOG}"
@@ -165,5 +176,10 @@ diff -u <(printf 'local tmux config\n') "${HOME}/.tmux.conf"
 
 if [[ "$(grep -Fx 'alias lg="lazygit"' "${HOME}/.zshrc" | wc -l)" != "1" ]]; then
     printf 'lazygit alias should be present exactly once\n' >&2
+    exit 1
+fi
+
+if [[ "$(grep -Fx '# >>> ubuntu_init user.zshrc >>>' "${HOME}/.zshrc" | wc -l)" != "1" ]]; then
+    printf 'user.zshrc block should be present exactly once\n' >&2
     exit 1
 fi

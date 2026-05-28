@@ -36,6 +36,19 @@ printf 'git %s\n' "$*" >>"${TEST_LOG}"
 STUB
 chmod +x "${TMP_DIR}/bin/git"
 
+cat >"${TMP_DIR}/bin/npm" <<'STUB'
+#!/usr/bin/env bash
+printf 'npm %s\n' "$*" >>"${TEST_LOG}"
+STUB
+chmod +x "${TMP_DIR}/bin/npm"
+
+cat >"${TMP_DIR}/bin/mkdir" <<'STUB'
+#!/usr/bin/env bash
+printf 'mkdir %s\n' "$*" >>"${TEST_LOG}"
+/usr/bin/mkdir "$@"
+STUB
+chmod +x "${TMP_DIR}/bin/mkdir"
+
 export TEST_LOG="${TMP_DIR}/calls.log"
 export HOME="${TMP_DIR}/home"
 export PATH="${TMP_DIR}/bin:${PATH}"
@@ -55,9 +68,12 @@ sudo ln -s python3.12 PYTHON_LINK
 curl -fsSL https://deb.nodesource.com/setup_current.x -o NODE_SETUP
 sudo -E bash NODE_SETUP
 sudo apt-get install -y nodejs
-sudo npm install n -g
+mkdir -p HOME/.npm-global
+npm config set prefix ~/.npm-global
+npm install n -g
 sudo n stable
-sudo npm install -g yarn
+npm install -g yarn
+mkdir -p HOME/.ssh
 git config --global core.excludesfile HOME/.gitignore_global
 EOF
 

@@ -42,6 +42,13 @@ printf 'install-user-tools\n' >>"${TEST_LOG}"
 STUB
 chmod +x "${TMP_DIR}/install-user-tools.sh"
 
+cat >"${TMP_DIR}/bin/npm" <<'STUB'
+#!/usr/bin/env bash
+printf 'npm %s\n' "$*" >>"${TEST_LOG}"
+exit 0
+STUB
+chmod +x "${TMP_DIR}/bin/npm"
+
 export TEST_LOG="${TMP_DIR}/calls.log"
 export TEST_OUTPUT="${TMP_DIR}/output.log"
 export TEST_SOURCES_LIST="${TMP_DIR}/sources.list"
@@ -67,6 +74,7 @@ sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 install-dev-tools
+npm install -g tree-sitter-cli@0.22.6
 install-user-tools
 EOF
 
@@ -128,6 +136,7 @@ sudo apt-get clean
 sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+npm install -g tree-sitter-cli@0.22.6
 install-user-tools
 EOF
 
