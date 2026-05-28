@@ -14,6 +14,18 @@ printf 'sudo %s\n' "$*" >>"${TEST_LOG}"
 if [[ "$1" == "ln" ]]; then
     ln "$2" "$3" "$4"
 fi
+
+if [[ "$1" == "install" && "$2" == "-m" && "$4" == "-d" ]]; then
+    /usr/bin/mkdir -p "$5"
+fi
+
+if [[ "$1" == "install" && "$2" == "-m" && "$4" != "-d" ]]; then
+    cp "$4" "$5"
+fi
+
+if [[ "$1" == "tee" ]]; then
+    cat >"$2"
+fi
 STUB
 chmod +x "${TMP_DIR}/bin/sudo"
 
@@ -27,8 +39,36 @@ while (($#)); do
     fi
     shift
 done
+printf '# bazelisk setup stub\n'
 STUB
 chmod +x "${TMP_DIR}/bin/curl"
+
+cat >"${TMP_DIR}/bin/gpg" <<'STUB'
+#!/usr/bin/env bash
+printf 'gpg %s\n' "$*" >>"${TEST_LOG}"
+while (($#)); do
+    if [[ "$1" == "-o" ]]; then
+        printf 'keyring stub\n' >"$2"
+        exit 0
+    fi
+    shift
+done
+STUB
+chmod +x "${TMP_DIR}/bin/gpg"
+
+cat >"${TMP_DIR}/bin/dpkg" <<'STUB'
+#!/usr/bin/env bash
+printf 'dpkg %s\n' "$*" >>"${TEST_LOG}"
+printf 'amd64\n'
+STUB
+chmod +x "${TMP_DIR}/bin/dpkg"
+
+cat >"${TMP_DIR}/bin/lsb_release" <<'STUB'
+#!/usr/bin/env bash
+printf 'lsb_release %s\n' "$*" >>"${TEST_LOG}"
+printf 'jammy\n'
+STUB
+chmod +x "${TMP_DIR}/bin/lsb_release"
 
 cat >"${TMP_DIR}/bin/git" <<'STUB'
 #!/usr/bin/env bash
@@ -73,6 +113,9 @@ export HOME="${TMP_DIR}/home"
 export PATH="${TMP_DIR}/bin:${PATH}"
 export NO_COLOR=1
 export UBUNTU_INIT_PYTHON_LINK="${TMP_DIR}/python"
+export UBUNTU_INIT_DOCKER_KEYRING="${TMP_DIR}/keyrings/docker.gpg"
+export UBUNTU_INIT_DOCKER_SOURCE_LIST="${TMP_DIR}/sources/docker.list"
+export UBUNTU_INIT_DOCKER_DAEMON_JSON="${TMP_DIR}/docker/daemon.json"
 
 touch "${TEST_LOG}"
 "${ROOT_DIR}/scripts/install-dev-tools.sh" >"${TMP_DIR}/output.log"
@@ -82,7 +125,7 @@ cat >"${expected}" <<'EOF'
 sudo apt-get install -y software-properties-common
 sudo add-apt-repository -y ppa:deadsnakes/ppa
 sudo apt-get update
-sudo apt-get install -y python3-pip python3.12 python3.12-venv python3.10-venv aptitude build-essential libsystemd-dev lib32stdc++6 clangd ripgrep fd-find neofetch curl net-tools lcov bear tofrodos vim xclip ninja-build cmake openssh-server fzf autoconf universal-ctags
+sudo apt-get install -y python3-pip python3.12 python3.12-venv python3.10-venv aptitude build-essential libsystemd-dev lib32stdc++6 clangd ripgrep fd-find neofetch curl gnupg net-tools lcov bear tofrodos vim xclip ninja-build cmake openssh-server fzf autoconf universal-ctags
 sudo ln -s python3.12 PYTHON_LINK
 curl -fsSL https://deb.nodesource.com/setup_current.x -o NODE_SETUP
 sudo -E bash NODE_SETUP
@@ -92,6 +135,28 @@ npm config set prefix ~/.npm-global
 npm install n -g
 sudo n stable
 npm install -g yarn
+curl -fsSL https://bazel.build/bazelisk.sh -o BAZELISK_SETUP
+sudo apt-get remove -y docker docker-engine docker.io containerd runc docker-compose docker-compose-plugin
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg lsb-release
+sudo install -m 0755 -d DOCKER_KEYRING_DIR
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o DOCKER_GPG_KEY
+gpg --dearmor -o DOCKER_KEYRING_TMP DOCKER_GPG_KEY
+sudo install -m 0644 DOCKER_KEYRING_TMP DOCKER_KEYRING
+sudo chmod a+r DOCKER_KEYRING
+dpkg --print-architecture
+lsb_release -cs
+sudo install -m 0755 -d DOCKER_SOURCE_DIR
+sudo tee DOCKER_SOURCE_LIST
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+sudo systemctl enable docker
+sudo systemctl start docker
+sudo usermod -aG docker TEST_USER
+sudo install -m 0755 -d DOCKER_DAEMON_DIR
+sudo tee DOCKER_DAEMON_JSON
+sudo systemctl daemon-reload
+sudo systemctl restart docker
 mkdir -p HOME/.ssh
 ssh-keygen -t ed25519 -f HOME/.ssh/id_ed25519 -N 
 git config --global core.excludesfile HOME/.gitignore_global
@@ -106,12 +171,24 @@ pip3 install ecdsa
 pip3 install uv
 EOF
 
-sed -i "s|${UBUNTU_INIT_PYTHON_LINK}|PYTHON_LINK|g; s|${HOME}|HOME|g; s|/tmp/tmp\\.[^ ]*|NODE_SETUP|g" "${TEST_LOG}"
+sed -i "s|${UBUNTU_INIT_PYTHON_LINK}|PYTHON_LINK|g; s|${HOME}|HOME|g" "${TEST_LOG}"
+sed -i "s|${UBUNTU_INIT_DOCKER_SOURCE_LIST}|DOCKER_SOURCE_LIST|g; s|$(dirname "${UBUNTU_INIT_DOCKER_SOURCE_LIST}")|DOCKER_SOURCE_DIR|g" "${TEST_LOG}"
+sed -i "s|${UBUNTU_INIT_DOCKER_DAEMON_JSON}|DOCKER_DAEMON_JSON|g; s|$(dirname "${UBUNTU_INIT_DOCKER_DAEMON_JSON}")|DOCKER_DAEMON_DIR|g" "${TEST_LOG}"
+sed -i "s|${UBUNTU_INIT_DOCKER_KEYRING}|DOCKER_KEYRING|g; s|$(dirname "${UBUNTU_INIT_DOCKER_KEYRING}")|DOCKER_KEYRING_DIR|g" "${TEST_LOG}"
+sed -i "s|${USER}|TEST_USER|g" "${TEST_LOG}"
+sed -i -E 's|(https://deb.nodesource.com/setup_current.x -o )/tmp/tmp\.[^ ]+|\1NODE_SETUP|g' "${TEST_LOG}"
+sed -i -E 's|(https://bazel.build/bazelisk.sh -o )/tmp/tmp\.[^ ]+|\1BAZELISK_SETUP|g' "${TEST_LOG}"
+sed -i -E 's|(https://download.docker.com/linux/ubuntu/gpg -o )/tmp/tmp\.[^ ]+|\1DOCKER_GPG_KEY|g' "${TEST_LOG}"
+sed -i -E 's|gpg --dearmor -o /tmp/tmp\.[^ ]+ /tmp/tmp\.[^ ]+|gpg --dearmor -o DOCKER_KEYRING_TMP DOCKER_GPG_KEY|g' "${TEST_LOG}"
+sed -i -E 's|sudo install -m 0644 /tmp/tmp\.[^ ]+ DOCKER_KEYRING|sudo install -m 0644 DOCKER_KEYRING_TMP DOCKER_KEYRING|g' "${TEST_LOG}"
+sed -i -E 's|sudo -E bash /tmp/tmp\.[^ ]+|sudo -E bash NODE_SETUP|g' "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 
 [[ -d "${HOME}/.ssh" ]]
 [[ -f "${HOME}/.ssh/authorized_keys" ]]
 [[ -f "${HOME}/.ssh/id_ed25519" ]]
+grep -F "https://mirrors.aliyun.com/docker-ce/linux/ubuntu jammy stable" "${UBUNTU_INIT_DOCKER_SOURCE_LIST}" >/dev/null
+grep -F "https://mirror.aliyuncs.com" "${UBUNTU_INIT_DOCKER_DAEMON_JSON}" >/dev/null
 grep -Fx ".tags" "${HOME}/.gitignore_global" >/dev/null
 
 : >"${TEST_LOG}"

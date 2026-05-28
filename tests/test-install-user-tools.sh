@@ -139,6 +139,9 @@ grep -F "deb https://debian.griffo.io/apt jammy main" "${TEST_YAZI_SOURCE_LIST}"
 grep -F "[OK] User tools setup finished" "${TMP_DIR}/output.log" >/dev/null
 grep -F "[INFO] Optional manual steps" "${TMP_DIR}/output.log" >/dev/null
 grep -F 'chsh -s "$(command -v zsh)"' "${TMP_DIR}/output.log" >/dev/null
+grep -F 'nvim' "${TMP_DIR}/output.log" >/dev/null
+grep -F 'Add the new SSH public key to GitHub and GitLab:' "${TMP_DIR}/output.log" >/dev/null
+grep -F 'cat ~/.ssh/id_ed25519.pub' "${TMP_DIR}/output.log" >/dev/null
 grep -F 'ZSH_THEME="powerlevel10k/powerlevel10k"' "${HOME}/.zshrc" >/dev/null
 grep -F 'plugins=(git z zsh-syntax-highlighting zsh-autosuggestions)' "${HOME}/.zshrc" >/dev/null
 grep -F '# >>> ubuntu_init user.zshrc >>>' "${HOME}/.zshrc" >/dev/null

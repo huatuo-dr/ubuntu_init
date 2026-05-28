@@ -254,6 +254,12 @@ print_manual_steps() {
 If you want zsh to be the default login shell, run:
   chsh -s "$(command -v zsh)"
 
+Start nvim once to install plugins:
+  nvim
+
+Add the new SSH public key to GitHub and GitLab:
+  cat ~/.ssh/id_ed25519.pub
+
 Restart the WSL instance after changing the default shell.
 EOF
 }
