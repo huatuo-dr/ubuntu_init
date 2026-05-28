@@ -173,6 +173,7 @@ sudo systemctl daemon-reload
 sudo systemctl restart docker
 mkdir -p HOME/.ssh
 ssh-keygen -t ed25519 -f HOME/.ssh/id_ed25519 -N 
+ssh-keygen -t rsa -b 4096 -f HOME/.ssh/id_rsa -N 
 git config --global core.excludesfile HOME/.gitignore_global
 git config --global core.editor vim
 git config --global core.autocrlf false
@@ -203,6 +204,7 @@ diff -u "${expected}" "${TEST_LOG}"
 [[ -d "${HOME}/.ssh" ]]
 [[ -f "${HOME}/.ssh/authorized_keys" ]]
 [[ -f "${HOME}/.ssh/id_ed25519" ]]
+[[ -f "${HOME}/.ssh/id_rsa" ]]
 grep -F "https://mirrors.aliyun.com/docker-ce/linux/ubuntu jammy stable" "${UBUNTU_INIT_DOCKER_SOURCE_LIST}" >/dev/null
 grep -F "https://mirror.aliyuncs.com" "${UBUNTU_INIT_DOCKER_DAEMON_JSON}" >/dev/null
 grep -Fx ".tags" "${HOME}/.gitignore_global" >/dev/null
@@ -217,6 +219,11 @@ fi
 
 if grep -F "ssh-keygen -t ed25519" "${TEST_LOG}" >/dev/null; then
     printf 'SSH key should not be regenerated when it already exists\n' >&2
+    exit 1
+fi
+
+if grep -F "ssh-keygen -t rsa" "${TEST_LOG}" >/dev/null; then
+    printf 'RSA SSH key should not be regenerated when it already exists\n' >&2
     exit 1
 fi
 

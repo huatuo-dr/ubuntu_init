@@ -259,6 +259,12 @@ configure_ssh() {
     else
         ssh-keygen -t ed25519 -f "${HOME}/.ssh/id_ed25519" -N ""
     fi
+
+    if [[ -f "${HOME}/.ssh/id_rsa" ]]; then
+        warn "SSH RSA key already exists, keeping it: ${HOME}/.ssh/id_rsa"
+    else
+        ssh-keygen -t rsa -b 4096 -f "${HOME}/.ssh/id_rsa" -N ""
+    fi
 }
 
 configure_git() {
