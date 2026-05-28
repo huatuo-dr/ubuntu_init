@@ -5,6 +5,8 @@ readonly PYTHON_LINK="${UBUNTU_INIT_PYTHON_LINK:-/usr/bin/python}"
 readonly DOCKER_KEYRING="${UBUNTU_INIT_DOCKER_KEYRING:-/etc/apt/keyrings/docker.gpg}"
 readonly DOCKER_SOURCE_LIST="${UBUNTU_INIT_DOCKER_SOURCE_LIST:-/etc/apt/sources.list.d/docker.list}"
 readonly DOCKER_DAEMON_JSON="${UBUNTU_INIT_DOCKER_DAEMON_JSON:-/etc/docker/daemon.json}"
+readonly BAZELISK_BIN="${UBUNTU_INIT_BAZELISK_BIN:-/usr/local/bin/bazelisk}"
+readonly BAZEL_BIN="${UBUNTU_INIT_BAZEL_BIN:-/usr/local/bin/bazel}"
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
     readonly COLOR_BLUE=$'\033[34m'
@@ -117,13 +119,40 @@ install_node() {
 }
 
 install_bazelisk() {
-    local setup_script
+    local arch
+    local asset_arch
+    local binary_file
 
-    info "Installing Bazelisk"
-    setup_script="$(mktemp)"
-    curl -fsSL https://bazel.build/bazelisk.sh -o "${setup_script}"
-    bash "${setup_script}"
-    rm -f "${setup_script}"
+    if [[ -x "${BAZELISK_BIN}" ]]; then
+        warn "Bazelisk already exists, skipping install"
+    else
+        info "Installing Bazelisk"
+        arch="$(dpkg --print-architecture)"
+        case "${arch}" in
+            amd64)
+                asset_arch="amd64"
+                ;;
+            arm64)
+                asset_arch="arm64"
+                ;;
+            *)
+                die "Unsupported Bazelisk architecture: ${arch}"
+                ;;
+        esac
+
+        binary_file="$(mktemp)"
+        curl -fsSL \
+            "https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-${asset_arch}" \
+            -o "${binary_file}"
+        sudo install -m 0755 "${binary_file}" "${BAZELISK_BIN}"
+        rm -f "${binary_file}"
+    fi
+
+    if [[ -e "${BAZEL_BIN}" || -L "${BAZEL_BIN}" ]]; then
+        warn "bazel command already exists, keeping it"
+    else
+        sudo ln -s "${BAZELISK_BIN}" "${BAZEL_BIN}"
+    fi
 }
 
 configure_docker_repository() {

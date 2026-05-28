@@ -124,6 +124,8 @@ export UBUNTU_INIT_PYTHON_LINK="${TMP_DIR}/python"
 export UBUNTU_INIT_DOCKER_KEYRING="${TMP_DIR}/keyrings/docker.gpg"
 export UBUNTU_INIT_DOCKER_SOURCE_LIST="${TMP_DIR}/sources/docker.list"
 export UBUNTU_INIT_DOCKER_DAEMON_JSON="${TMP_DIR}/docker/daemon.json"
+export UBUNTU_INIT_BAZELISK_BIN="${TMP_DIR}/bin/bazelisk"
+export UBUNTU_INIT_BAZEL_BIN="${TMP_DIR}/bin/bazel"
 
 touch "${TEST_LOG}"
 "${ROOT_DIR}/scripts/install-dev-tools.sh" >"${TMP_DIR}/output.log"
@@ -144,7 +146,10 @@ npm install n -g
 mkdir -p HOME/.local
 HOME/.npm-global/bin/n stable
 npm install -g yarn
-curl -fsSL https://bazel.build/bazelisk.sh -o BAZELISK_SETUP
+dpkg --print-architecture
+curl -fsSL https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64 -o BAZELISK_BIN_TMP
+sudo install -m 0755 BAZELISK_BIN_TMP BAZELISK_BIN
+sudo ln -s BAZELISK_BIN BAZEL_BIN
 sudo apt-get remove -y docker docker-engine docker.io containerd runc docker-compose docker-compose-plugin
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg lsb-release
@@ -184,9 +189,11 @@ sed -i "s|${UBUNTU_INIT_PYTHON_LINK}|PYTHON_LINK|g; s|${HOME}|HOME|g" "${TEST_LO
 sed -i "s|${UBUNTU_INIT_DOCKER_SOURCE_LIST}|DOCKER_SOURCE_LIST|g; s|$(dirname "${UBUNTU_INIT_DOCKER_SOURCE_LIST}")|DOCKER_SOURCE_DIR|g" "${TEST_LOG}"
 sed -i "s|${UBUNTU_INIT_DOCKER_DAEMON_JSON}|DOCKER_DAEMON_JSON|g; s|$(dirname "${UBUNTU_INIT_DOCKER_DAEMON_JSON}")|DOCKER_DAEMON_DIR|g" "${TEST_LOG}"
 sed -i "s|${UBUNTU_INIT_DOCKER_KEYRING}|DOCKER_KEYRING|g; s|$(dirname "${UBUNTU_INIT_DOCKER_KEYRING}")|DOCKER_KEYRING_DIR|g" "${TEST_LOG}"
+sed -i "s|${UBUNTU_INIT_BAZELISK_BIN}|BAZELISK_BIN|g; s|${UBUNTU_INIT_BAZEL_BIN}|BAZEL_BIN|g" "${TEST_LOG}"
 sed -i "s|${USER}|TEST_USER|g" "${TEST_LOG}"
 sed -i -E 's|(https://deb.nodesource.com/setup_current.x -o )/tmp/tmp\.[^ ]+|\1NODE_SETUP|g' "${TEST_LOG}"
-sed -i -E 's|(https://bazel.build/bazelisk.sh -o )/tmp/tmp\.[^ ]+|\1BAZELISK_SETUP|g' "${TEST_LOG}"
+sed -i -E 's|(https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64 -o )/tmp/tmp\.[^ ]+|\1BAZELISK_BIN_TMP|g' "${TEST_LOG}"
+sed -i -E 's|sudo install -m 0755 /tmp/tmp\.[^ ]+ BAZELISK_BIN|sudo install -m 0755 BAZELISK_BIN_TMP BAZELISK_BIN|g' "${TEST_LOG}"
 sed -i -E 's|(https://download.docker.com/linux/ubuntu/gpg -o )/tmp/tmp\.[^ ]+|\1DOCKER_GPG_KEY|g' "${TEST_LOG}"
 sed -i -E 's|gpg --dearmor -o /tmp/tmp\.[^ ]+ /tmp/tmp\.[^ ]+|gpg --dearmor -o DOCKER_KEYRING_TMP DOCKER_GPG_KEY|g' "${TEST_LOG}"
 sed -i -E 's|sudo install -m 0644 /tmp/tmp\.[^ ]+ DOCKER_KEYRING|sudo install -m 0644 DOCKER_KEYRING_TMP DOCKER_KEYRING|g' "${TEST_LOG}"
