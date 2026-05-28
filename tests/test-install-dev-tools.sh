@@ -80,6 +80,12 @@ printf 'git %s\n' "$*" >>"${TEST_LOG}"
 STUB
 chmod +x "${TMP_DIR}/bin/git"
 
+cat >"${TMP_DIR}/bin/git-lfs" <<'STUB'
+#!/usr/bin/env bash
+printf 'git-lfs %s\n' "$*" >>"${TEST_LOG}"
+STUB
+chmod +x "${TMP_DIR}/bin/git-lfs"
+
 cat >"${TMP_DIR}/bin/npm" <<'STUB'
 #!/usr/bin/env bash
 printf 'npm %s\n' "$*" >>"${TEST_LOG}"
@@ -142,7 +148,7 @@ sudo chmod +x POLICY_RC_D
 sudo apt-get install -y software-properties-common
 sudo add-apt-repository -y ppa:deadsnakes/ppa
 sudo apt-get update
-sudo apt-get install -y python3-pip python3.12 python3.12-venv python3.10-venv aptitude build-essential libsystemd-dev lib32stdc++6 clangd ripgrep fd-find neofetch curl gnupg net-tools lcov bear tofrodos vim xclip ninja-build cmake openssh-server fzf autoconf universal-ctags
+sudo apt-get install -y python3-pip python3.12 python3.12-venv python3.10-venv aptitude build-essential libsystemd-dev lib32stdc++6 clangd ripgrep fd-find neofetch curl gnupg net-tools lcov bear tofrodos vim xclip ninja-build cmake openssh-server fzf autoconf universal-ctags git-lfs
 sudo rm -f POLICY_RC_D
 sudo ln -s python3.12 PYTHON_LINK
 curl -fsSL https://deb.nodesource.com/setup_current.x -o NODE_SETUP
@@ -189,6 +195,7 @@ git config --global color.ui auto
 git config --global credential.helper store
 git config --global core.quotepath false
 git config --global http.postBuffer 524288000
+git lfs install
 pip3 install pycryptodome
 pip3 install ecdsa
 pip3 install uv

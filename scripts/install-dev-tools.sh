@@ -100,6 +100,7 @@ install_apt_packages() {
         fzf
         autoconf
         universal-ctags
+        git-lfs
     )
 
     disable_service_autostart
@@ -314,6 +315,12 @@ configure_git() {
 
     if ! grep -Fxq ".tags" "${gitignore_file}"; then
         printf ".tags\n" >>"${gitignore_file}"
+    fi
+
+    if command -v git-lfs >/dev/null 2>&1; then
+        git lfs install
+    else
+        warn "git-lfs is not available, skipping git lfs install"
     fi
 }
 
