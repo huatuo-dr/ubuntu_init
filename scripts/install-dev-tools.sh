@@ -8,6 +8,7 @@ readonly DOCKER_DAEMON_JSON="${UBUNTU_INIT_DOCKER_DAEMON_JSON:-/etc/docker/daemo
 readonly BAZELISK_BIN="${UBUNTU_INIT_BAZELISK_BIN:-/usr/local/bin/bazelisk}"
 readonly BAZEL_BIN="${UBUNTU_INIT_BAZEL_BIN:-/usr/local/bin/bazel}"
 readonly POLICY_RC_D="${UBUNTU_INIT_POLICY_RC_D:-/usr/sbin/policy-rc.d}"
+readonly EXTERNALLY_MANAGED="${UBUNTU_INIT_EXTERNALLY_MANAGED:-/usr/lib/python3.12/EXTERNALLY-MANAGED}"
 
 POLICY_RC_D_CREATED=0
 
@@ -324,8 +325,16 @@ configure_git() {
     fi
 }
 
-install_python_packages() {
+install_python_tools() {
     info "Installing Python packages"
+    if [[ -f "${EXTERNALLY_MANAGED}" ]]; then
+        sudo mv "${EXTERNALLY_MANAGED}" "${EXTERNALLY_MANAGED}.bak"
+    elif [[ -f "${EXTERNALLY_MANAGED}.bak" ]]; then
+        warn "Python externally managed marker already backed up: ${EXTERNALLY_MANAGED}.bak"
+    else
+        warn "Python externally managed marker not found, continuing: ${EXTERNALLY_MANAGED}"
+    fi
+
     pip3 install pycryptodome
     pip3 install ecdsa
     pip3 install uv
@@ -339,7 +348,7 @@ main() {
     install_docker
     configure_ssh
     configure_git
-    install_python_packages
+    install_python_tools
 
     success "Common development tools setup finished"
 }

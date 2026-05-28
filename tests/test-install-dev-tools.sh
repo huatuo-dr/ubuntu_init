@@ -15,6 +15,10 @@ if [[ "$1" == "ln" ]]; then
     ln "$2" "$3" "$4"
 fi
 
+if [[ "$1" == "mv" ]]; then
+    mv "$2" "$3"
+fi
+
 if [[ "$1" == "install" && "$2" == "-m" && "$4" == "-d" ]]; then
     /usr/bin/mkdir -p "$5"
 fi
@@ -137,6 +141,9 @@ export UBUNTU_INIT_DOCKER_DAEMON_JSON="${TMP_DIR}/docker/daemon.json"
 export UBUNTU_INIT_BAZELISK_BIN="${TMP_DIR}/bin/bazelisk"
 export UBUNTU_INIT_BAZEL_BIN="${TMP_DIR}/bin/bazel"
 export UBUNTU_INIT_POLICY_RC_D="${TMP_DIR}/policy-rc.d"
+export UBUNTU_INIT_EXTERNALLY_MANAGED="${TMP_DIR}/EXTERNALLY-MANAGED"
+
+printf 'externally managed marker\n' >"${UBUNTU_INIT_EXTERNALLY_MANAGED}"
 
 touch "${TEST_LOG}"
 "${ROOT_DIR}/scripts/install-dev-tools.sh" >"${TMP_DIR}/output.log"
@@ -196,6 +203,7 @@ git config --global credential.helper store
 git config --global core.quotepath false
 git config --global http.postBuffer 524288000
 git lfs install
+sudo mv EXTERNALLY_MANAGED EXTERNALLY_MANAGED.bak
 pip3 install pycryptodome
 pip3 install ecdsa
 pip3 install uv
@@ -207,6 +215,7 @@ sed -i "s|${UBUNTU_INIT_DOCKER_DAEMON_JSON}|DOCKER_DAEMON_JSON|g; s|$(dirname "$
 sed -i "s|${UBUNTU_INIT_DOCKER_KEYRING}|DOCKER_KEYRING|g; s|$(dirname "${UBUNTU_INIT_DOCKER_KEYRING}")|DOCKER_KEYRING_DIR|g" "${TEST_LOG}"
 sed -i "s|${UBUNTU_INIT_BAZELISK_BIN}|BAZELISK_BIN|g; s|${UBUNTU_INIT_BAZEL_BIN}|BAZEL_BIN|g" "${TEST_LOG}"
 sed -i "s|${UBUNTU_INIT_POLICY_RC_D}|POLICY_RC_D|g" "${TEST_LOG}"
+sed -i "s|${UBUNTU_INIT_EXTERNALLY_MANAGED}|EXTERNALLY_MANAGED|g" "${TEST_LOG}"
 sed -i "s|${USER}|TEST_USER|g" "${TEST_LOG}"
 sed -i -E 's|(https://deb.nodesource.com/setup_current.x -o )/tmp/tmp\.[^ ]+|\1NODE_SETUP|g' "${TEST_LOG}"
 sed -i -E 's|(https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64 -o )/tmp/tmp\.[^ ]+|\1BAZELISK_BIN_TMP|g' "${TEST_LOG}"
@@ -224,6 +233,7 @@ diff -u "${expected}" "${TEST_LOG}"
 grep -F "https://mirrors.aliyun.com/docker-ce/linux/ubuntu jammy stable" "${UBUNTU_INIT_DOCKER_SOURCE_LIST}" >/dev/null
 grep -F "https://mirror.aliyuncs.com" "${UBUNTU_INIT_DOCKER_DAEMON_JSON}" >/dev/null
 [[ ! -e "${UBUNTU_INIT_POLICY_RC_D}" ]]
+[[ -f "${UBUNTU_INIT_EXTERNALLY_MANAGED}.bak" ]]
 grep -Fx ".tags" "${HOME}/.gitignore_global" >/dev/null
 
 : >"${TEST_LOG}"
