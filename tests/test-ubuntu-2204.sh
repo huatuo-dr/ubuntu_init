@@ -80,7 +80,7 @@ sudo apt-get clean
 sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses5 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
+sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses6 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc-s1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
 sudo usermod -a -G dialout USER_NAME
 install-dev-tools
 npm install -g tree-sitter-cli@0.22.6
@@ -124,7 +124,7 @@ sudo tee SOURCE_LIST
 sudo apt-get clean
 sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get update
-sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses5 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
+sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses6 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc-s1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
 sudo usermod -a -G dialout USER_NAME
 install-dev-tools
 EOF
@@ -149,7 +149,7 @@ sudo apt-get clean
 sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses5 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
+sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses6 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc-s1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
 sudo usermod -a -G dialout USER_NAME
 npm install -g tree-sitter-cli@0.22.6
 install-user-tools
@@ -172,7 +172,7 @@ sudo tee SOURCE_LIST
 sudo apt-get clean
 sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get update
-sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses5 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
+sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses6 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc-s1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
 sudo usermod -a -G dialout USER_NAME
 EOF
 
