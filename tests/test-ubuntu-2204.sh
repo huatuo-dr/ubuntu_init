@@ -55,17 +55,23 @@ chmod +x "${TMP_DIR}/bin/npm"
 
 export TEST_LOG="${TMP_DIR}/calls.log"
 export TEST_OUTPUT="${TMP_DIR}/output.log"
+export TEST_PROC_VERSION="${TMP_DIR}/proc-version"
+export TEST_PROC_OSRELEASE="${TMP_DIR}/osrelease"
 export TEST_SOURCES_LIST="${TMP_DIR}/sources.list"
 export TEST_SOURCES_BACKUP="${TMP_DIR}/sources.list.bak"
 export TEST_WSL_CONF="${TMP_DIR}/wsl.conf"
 export PATH="${TMP_DIR}/bin:${PATH}"
 export NO_COLOR=1
 export UBUNTU_INIT_DISABLE_SUDO_KEEPALIVE=1
+export UBUNTU_INIT_PROC_VERSION="${TEST_PROC_VERSION}"
+export UBUNTU_INIT_PROC_OSRELEASE="${TEST_PROC_OSRELEASE}"
 export UBUNTU_INIT_APT_SOURCES_LIST="${TEST_SOURCES_LIST}"
 export UBUNTU_INIT_WSL_CONF="${TEST_WSL_CONF}"
 export UBUNTU_INIT_DEV_TOOLS_SCRIPT="${TMP_DIR}/install-dev-tools.sh"
 export UBUNTU_INIT_USER_TOOLS_SCRIPT="${TMP_DIR}/install-user-tools.sh"
 
+printf 'Linux version Microsoft WSL\n' >"${TEST_PROC_VERSION}"
+printf 'microsoft-standard-WSL2\n' >"${TEST_PROC_OSRELEASE}"
 printf 'original sources\n' >"${TEST_SOURCES_LIST}"
 
 "${ROOT_DIR}/scripts/ubuntu-2204.sh" --yes >"${TEST_OUTPUT}"
@@ -196,3 +202,28 @@ fi
 
 grep -F "Continue? [y/N]" "${TEST_OUTPUT}" >/dev/null
 grep -F "[ERROR] Aborted by user." "${TEST_OUTPUT}" >/dev/null
+
+: >"${TEST_LOG}"
+: >"${TEST_OUTPUT}"
+rm -f "${TEST_SOURCES_BACKUP}" "${TEST_WSL_CONF}"
+printf 'Linux version generic\n' >"${TEST_PROC_VERSION}"
+printf 'generic\n' >"${TEST_PROC_OSRELEASE}"
+printf 'original sources\n' >"${TEST_SOURCES_LIST}"
+
+"${ROOT_DIR}/scripts/ubuntu-2204.sh" --yes --skip-upgrade --skip-dev-tools --skip-user-tools >"${TEST_OUTPUT}"
+
+cat >"${expected}" <<'EOF'
+sudo -v
+sudo cp SOURCE_LIST SOURCE_LIST.bak
+sudo tee SOURCE_LIST
+sudo apt-get clean
+sudo rm -rf /var/lib/apt/lists/*
+sudo apt-get update
+sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev lib32ncurses6 u-boot-tools mtd-utils scons libffi-dev zip lib32gcc-s1 libc6-dev-i386 libc6-i386 libc6-dev liblzma-dev lib32z1 libstdc++6 libstdc++-11-dev gcc-multilib g++-multilib squashfs-tools bison bc flex kmod unzip p7zip-full rsync lzma imagemagick cpio lzop libboost-all-dev
+sudo usermod -a -G dialout USER_NAME
+EOF
+
+sed -i "s|${TEST_SOURCES_LIST}|SOURCE_LIST|g; s|${TEST_SOURCES_BACKUP}|SOURCE_LIST.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|${USER}|USER_NAME|g" "${TEST_LOG}"
+diff -u "${expected}" "${TEST_LOG}"
+[[ ! -f "${TEST_WSL_CONF}" ]]
+grep -F "[WARN] Non-WSL environment detected, skipping WSL interop configuration" "${TEST_OUTPUT}" >/dev/null

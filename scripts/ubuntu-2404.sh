@@ -3,6 +3,8 @@ set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly OS_RELEASE_FILE="${UBUNTU_INIT_OS_RELEASE:-/etc/os-release}"
+readonly PROC_VERSION_FILE="${UBUNTU_INIT_PROC_VERSION:-/proc/version}"
+readonly PROC_OSRELEASE_FILE="${UBUNTU_INIT_PROC_OSRELEASE:-/proc/sys/kernel/osrelease}"
 readonly APT_SOURCES_FILE="${UBUNTU_INIT_APT_SOURCES_FILE:-/etc/apt/sources.list.d/ubuntu.sources}"
 readonly WSL_CONF="${UBUNTU_INIT_WSL_CONF:-/etc/wsl.conf}"
 readonly DEV_TOOLS_SCRIPT="${UBUNTU_INIT_DEV_TOOLS_SCRIPT:-${SCRIPT_DIR}/install-dev-tools.sh}"
@@ -93,10 +95,9 @@ parse_args() {
     done
 }
 
-require_wsl() {
-    if ! grep -qi microsoft /proc/version; then
-        die "This script should run inside WSL."
-    fi
+is_wsl() {
+    grep -qiE 'microsoft|wsl' "${PROC_VERSION_FILE}" 2>/dev/null ||
+        grep -qiE 'microsoft|wsl' "${PROC_OSRELEASE_FILE}" 2>/dev/null
 }
 
 require_ubuntu_2404() {
@@ -152,6 +153,11 @@ start_sudo_keepalive() {
 }
 
 configure_wsl_interop() {
+    if ! is_wsl; then
+        warn "Non-WSL environment detected, skipping WSL interop configuration"
+        return
+    fi
+
     info "Configuring WSL interop"
 
     if [[ -f "${WSL_CONF}" ]] && grep -Fxq "appendWindowsPath = false" "${WSL_CONF}"; then
@@ -277,7 +283,6 @@ run_script() {
 
 main() {
     parse_args "$@"
-    require_wsl
     require_ubuntu_2404
     confirm_execution
 
