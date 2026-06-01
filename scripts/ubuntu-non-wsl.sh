@@ -3,6 +3,7 @@ set -euo pipefail
 
 readonly OS_RELEASE_FILE="${UBUNTU_INIT_OS_RELEASE:-/etc/os-release}"
 readonly PROC_VERSION_FILE="${UBUNTU_INIT_PROC_VERSION:-/proc/version}"
+readonly PROC_OSRELEASE_FILE="${UBUNTU_INIT_PROC_OSRELEASE:-/proc/sys/kernel/osrelease}"
 readonly SAMBA_CONF="${UBUNTU_INIT_SAMBA_CONF:-/etc/samba/smb.conf}"
 readonly SHARE_DIR="${UBUNTU_INIT_SHARE_DIR:-/home/share}"
 readonly FONT_DIR="${UBUNTU_INIT_FONT_DIR:-${HOME}/.local/share/fonts}"
@@ -85,7 +86,8 @@ parse_args() {
 }
 
 require_non_wsl() {
-    if grep -qi microsoft "${PROC_VERSION_FILE}"; then
+    if grep -qiE 'microsoft|wsl' "${PROC_VERSION_FILE}" 2>/dev/null ||
+        grep -qiE 'microsoft|wsl' "${PROC_OSRELEASE_FILE}" 2>/dev/null; then
         die "This script should run outside WSL."
     fi
 }
@@ -196,9 +198,16 @@ EOF
 
 install_chrome() {
     local chrome_deb
+    local arch
 
     if command -v "${CHROME_COMMAND}" >/dev/null 2>&1; then
         warn "Google Chrome already exists, skipping install"
+        return
+    fi
+
+    arch="$(dpkg --print-architecture)"
+    if [[ "${arch}" != "amd64" ]]; then
+        warn "Google Chrome only ships an amd64 package, skipping install on: ${arch}"
         return
     fi
 

@@ -8,7 +8,7 @@ readonly DOCKER_DAEMON_JSON="${UBUNTU_INIT_DOCKER_DAEMON_JSON:-/etc/docker/daemo
 readonly BAZELISK_BIN="${UBUNTU_INIT_BAZELISK_BIN:-/usr/local/bin/bazelisk}"
 readonly BAZEL_BIN="${UBUNTU_INIT_BAZEL_BIN:-/usr/local/bin/bazel}"
 readonly POLICY_RC_D="${UBUNTU_INIT_POLICY_RC_D:-/usr/sbin/policy-rc.d}"
-readonly EXTERNALLY_MANAGED="${UBUNTU_INIT_EXTERNALLY_MANAGED:-/usr/lib/python3.12/EXTERNALLY-MANAGED}"
+readonly EXTERNALLY_MANAGED="${UBUNTU_INIT_EXTERNALLY_MANAGED:-$(python3 -c 'import sysconfig, os; print(os.path.join(sysconfig.get_path("stdlib"), "EXTERNALLY-MANAGED"))' 2>/dev/null || echo /usr/lib/python3.12/EXTERNALLY-MANAGED)}"
 
 POLICY_RC_D_CREATED=0
 
@@ -141,7 +141,7 @@ install_node() {
 
     sudo apt-get install -y nodejs
     mkdir -p "${HOME}/.npm-global"
-    npm config set prefix '~/.npm-global'
+    npm config set prefix "${HOME}/.npm-global"
     npm install n -g
     if [[ ! -x "${n_command}" ]]; then
         die "n was not installed at expected path: ${n_command}"

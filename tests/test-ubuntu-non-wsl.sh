@@ -62,6 +62,13 @@ printf 'fc-cache %s\n' "$*" >>"${TEST_LOG}"
 STUB
 chmod +x "${TMP_DIR}/bin/fc-cache"
 
+cat >"${TMP_DIR}/bin/dpkg" <<'STUB'
+#!/usr/bin/env bash
+printf 'dpkg %s\n' "$*" >>"${TEST_LOG}"
+printf 'amd64\n'
+STUB
+chmod +x "${TMP_DIR}/bin/dpkg"
+
 export TEST_LOG="${TMP_DIR}/calls.log"
 export TEST_OUTPUT="${TMP_DIR}/output.log"
 export HOME="${TMP_DIR}/home"
@@ -69,6 +76,7 @@ export PATH="${TMP_DIR}/bin:${PATH}"
 export NO_COLOR=1
 export UBUNTU_INIT_OS_RELEASE="${TMP_DIR}/os-release"
 export UBUNTU_INIT_PROC_VERSION="${TMP_DIR}/proc-version"
+export UBUNTU_INIT_PROC_OSRELEASE="${TMP_DIR}/osrelease"
 export UBUNTU_INIT_SAMBA_CONF="${TMP_DIR}/smb.conf"
 export UBUNTU_INIT_SHARE_DIR="${TMP_DIR}/share"
 export UBUNTU_INIT_FONT_DIR="${TMP_DIR}/fonts"
@@ -76,6 +84,7 @@ export UBUNTU_INIT_CHROME_COMMAND="test-google-chrome"
 
 printf 'ID=ubuntu\nVERSION_ID="24.04"\n' >"${UBUNTU_INIT_OS_RELEASE}"
 printf 'Linux version generic\n' >"${UBUNTU_INIT_PROC_VERSION}"
+printf 'generic\n' >"${UBUNTU_INIT_PROC_OSRELEASE}"
 touch "${UBUNTU_INIT_SAMBA_CONF}" "${TEST_LOG}"
 
 "${ROOT_DIR}/scripts/ubuntu-non-wsl.sh" --yes >"${TEST_OUTPUT}"
@@ -92,13 +101,14 @@ sudo chmod 777 -R SHARE_DIR
 sudo tee -a SAMBA_CONF
 sudo smbpasswd -a USER_NAME
 sudo service smbd restart
+dpkg --print-architecture
 curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o CHROME_DEB
 sudo apt-get install -y CHROME_DEB
 sudo systemctl enable ssh
 sudo systemctl start ssh
 EOF
 
-sed -i "s|${UBUNTU_INIT_SHARE_DIR}|SHARE_DIR|g; s|${UBUNTU_INIT_SAMBA_CONF}|SAMBA_CONF|g; s|${UBUNTU_INIT_FONT_DIR}|FONT_DIR|g; s|${USER}|USER_NAME|g" "${TEST_LOG}"
+sed -i "s|${UBUNTU_INIT_SHARE_DIR}|SHARE_DIR|g; s|${UBUNTU_INIT_SAMBA_CONF}|SAMBA_CONF|g; s|${UBUNTU_INIT_FONT_DIR}|FONT_DIR|g; s|smbpasswd -a ${USER}|smbpasswd -a USER_NAME|g" "${TEST_LOG}"
 sed -i -E 's|(Hack.zip -o )/tmp/tmp\.[^ ]+/Hack.zip|\1HACK_ZIP|g' "${TEST_LOG}"
 sed -i -E 's|(unzip -q )/tmp/tmp\.[^ ]+/Hack.zip -d /tmp/tmp\.[^ ]+|\1HACK_ZIP -d HACK_DIR|g' "${TEST_LOG}"
 sed -i -E 's|(google-chrome-stable_current_amd64.deb -o )/tmp/tmp\.[^ ]+\.deb|\1CHROME_DEB|g' "${TEST_LOG}"
