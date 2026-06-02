@@ -96,7 +96,7 @@ npm install -g tree-sitter-cli
 install-user-tools
 EOF
 
-sed -i "s|${TEST_SOURCES_FILE}|SOURCE_FILE|g; s|${TEST_SOURCES_BACKUP}|SOURCE_FILE.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|${USER}|USER_NAME|g" "${TEST_LOG}"
+sed -i "s|${TEST_SOURCES_FILE}|SOURCE_FILE|g; s|${TEST_SOURCES_BACKUP}|SOURCE_FILE.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|dialout ${USER}|dialout USER_NAME|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 diff -u <(printf 'original sources\n') "${TEST_SOURCES_BACKUP}"
 grep -F "[interop]" "${TEST_WSL_CONF}" >/dev/null
@@ -139,7 +139,7 @@ sudo usermod -a -G dialout USER_NAME
 install-dev-tools
 EOF
 
-sed -i "s|${TEST_SOURCES_FILE}|SOURCE_FILE|g; s|${TEST_SOURCES_BACKUP}|SOURCE_FILE.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|${USER}|USER_NAME|g" "${TEST_LOG}"
+sed -i "s|${TEST_SOURCES_FILE}|SOURCE_FILE|g; s|${TEST_SOURCES_BACKUP}|SOURCE_FILE.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|dialout ${USER}|dialout USER_NAME|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 grep -F "[WARN] Skipping system package upgrade" "${TEST_OUTPUT}" >/dev/null
 grep -F "[WARN] Skipping user tools setup" "${TEST_OUTPUT}" >/dev/null
@@ -165,7 +165,7 @@ npm install -g tree-sitter-cli
 install-user-tools
 EOF
 
-sed -i "s|${TEST_SOURCES_FILE}|SOURCE_FILE|g; s|${TEST_SOURCES_BACKUP}|SOURCE_FILE.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|${USER}|USER_NAME|g" "${TEST_LOG}"
+sed -i "s|${TEST_SOURCES_FILE}|SOURCE_FILE|g; s|${TEST_SOURCES_BACKUP}|SOURCE_FILE.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|dialout ${USER}|dialout USER_NAME|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 grep -F "[WARN] Skipping development tools setup" "${TEST_OUTPUT}" >/dev/null
 
@@ -186,7 +186,7 @@ sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqli
 sudo usermod -a -G dialout USER_NAME
 EOF
 
-sed -i "s|${TEST_SOURCES_FILE}|SOURCE_FILE|g; s|${TEST_SOURCES_BACKUP}|SOURCE_FILE.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|${USER}|USER_NAME|g" "${TEST_LOG}"
+sed -i "s|${TEST_SOURCES_FILE}|SOURCE_FILE|g; s|${TEST_SOURCES_BACKUP}|SOURCE_FILE.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|dialout ${USER}|dialout USER_NAME|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 diff -u <(printf 'existing backup\n') "${TEST_SOURCES_BACKUP}"
 grep -F "[WARN] Apt sources backup already exists, keeping it:" "${TEST_OUTPUT}" >/dev/null
@@ -227,7 +227,7 @@ sudo apt-get install -y zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqli
 sudo usermod -a -G dialout USER_NAME
 EOF
 
-sed -i "s|${TEST_SOURCES_FILE}|SOURCE_FILE|g; s|${TEST_SOURCES_BACKUP}|SOURCE_FILE.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|${USER}|USER_NAME|g" "${TEST_LOG}"
+sed -i "s|${TEST_SOURCES_FILE}|SOURCE_FILE|g; s|${TEST_SOURCES_BACKUP}|SOURCE_FILE.bak|g; s|${TEST_WSL_CONF}|WSL_CONF|g; s|dialout ${USER}|dialout USER_NAME|g" "${TEST_LOG}"
 diff -u "${expected}" "${TEST_LOG}"
 [[ ! -f "${TEST_WSL_CONF}" ]]
 grep -F "[WARN] Non-WSL environment detected, skipping WSL interop configuration" "${TEST_OUTPUT}" >/dev/null

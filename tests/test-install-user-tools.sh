@@ -92,6 +92,13 @@ printf 'yarn %s\n' "$*" >>"${TEST_LOG}"
 STUB
 chmod +x "${TMP_DIR}/bin/yarn"
 
+cat >"${TMP_DIR}/bin/dpkg" <<'STUB'
+#!/usr/bin/env bash
+printf 'dpkg %s\n' "$*" >>"${TEST_LOG}"
+printf 'amd64\n'
+STUB
+chmod +x "${TMP_DIR}/bin/dpkg"
+
 export TEST_LOG="${TMP_DIR}/calls.log"
 export TMP_DIR
 export HOME="${TMP_DIR}/home"
@@ -111,6 +118,7 @@ touch "${TEST_LOG}"
 
 expected="${TMP_DIR}/expected.log"
 cat >"${expected}" <<'EOF'
+sudo -v
 curl -sS https://debian.griffo.io/EA0F721D231FDD3A0A17B9AC7808B4DD62C41256.asc -o YAZI_KEY
 gpg --dearmor --yes -o YAZI_KEY YAZI_KEY
 sudo install -m 0644 YAZI_KEY YAZI_KEYRING
@@ -126,6 +134,7 @@ git clone https://github.com/zsh-users/zsh-autosuggestions HOME/.oh-my-zsh/custo
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
 git clone --depth=1 https://github.com/romkatv/powerlevel10k.git HOME/.oh-my-zsh/custom/themes/powerlevel10k
 git clone https://github.com/KyleDeng/tmux.conf HOME/.cache/ubuntu-init/tmux.conf
+dpkg --print-architecture
 curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest
 curl -Lo lazygit.tar.gz https://github.com/jesseduffield/lazygit/releases/download/v0.44.1/lazygit_0.44.1_Linux_x86_64.tar.gz
 tar xf lazygit.tar.gz lazygit
@@ -160,6 +169,7 @@ chmod +x "${TMP_DIR}/bin/test-lazygit"
 "${ROOT_DIR}/scripts/install-user-tools.sh" >"${TMP_DIR}/output-second.log"
 
 cat >"${expected}" <<'EOF'
+sudo -v
 sudo apt-get update
 sudo apt-get install -y yazi file ffmpeg jq poppler-utils p7zip-full zoxide
 sudo apt-get install -y zsh powerline tmux git

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly OS_RELEASE_FILE="${UBUNTU_INIT_OS_RELEASE:-/etc/os-release}"
 readonly PROC_VERSION_FILE="${UBUNTU_INIT_PROC_VERSION:-/proc/version}"
 readonly PROC_OSRELEASE_FILE="${UBUNTU_INIT_PROC_OSRELEASE:-/proc/sys/kernel/osrelease}"
 readonly APT_SOURCES_LIST="${UBUNTU_INIT_APT_SOURCES_LIST:-/etc/apt/sources.list}"
@@ -101,7 +102,7 @@ is_wsl() {
 
 require_ubuntu_2204() {
     # shellcheck disable=SC1091
-    source /etc/os-release
+    source "${OS_RELEASE_FILE}"
 
     if [[ "${ID}" != "ubuntu" || "${VERSION_ID}" != "22.04" ]]; then
         die "This script should run on Ubuntu 22.04."

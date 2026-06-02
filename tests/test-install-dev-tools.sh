@@ -162,7 +162,7 @@ curl -fsSL https://deb.nodesource.com/setup_current.x -o NODE_SETUP
 sudo -E bash NODE_SETUP
 sudo apt-get install -y nodejs
 mkdir -p HOME/.npm-global
-npm config set prefix ~/.npm-global
+npm config set prefix HOME/.npm-global
 npm install n -g
 mkdir -p HOME/.local
 HOME/.npm-global/bin/n stable
@@ -216,7 +216,7 @@ sed -i "s|${UBUNTU_INIT_DOCKER_KEYRING}|DOCKER_KEYRING|g; s|$(dirname "${UBUNTU_
 sed -i "s|${UBUNTU_INIT_BAZELISK_BIN}|BAZELISK_BIN|g; s|${UBUNTU_INIT_BAZEL_BIN}|BAZEL_BIN|g" "${TEST_LOG}"
 sed -i "s|${UBUNTU_INIT_POLICY_RC_D}|POLICY_RC_D|g" "${TEST_LOG}"
 sed -i "s|${UBUNTU_INIT_EXTERNALLY_MANAGED}|EXTERNALLY_MANAGED|g" "${TEST_LOG}"
-sed -i "s|${USER}|TEST_USER|g" "${TEST_LOG}"
+sed -i "s|usermod -aG docker ${USER}|usermod -aG docker TEST_USER|g" "${TEST_LOG}"
 sed -i -E 's|(https://deb.nodesource.com/setup_current.x -o )/tmp/tmp\.[^ ]+|\1NODE_SETUP|g' "${TEST_LOG}"
 sed -i -E 's|(https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64 -o )/tmp/tmp\.[^ ]+|\1BAZELISK_BIN_TMP|g' "${TEST_LOG}"
 sed -i -E 's|sudo install -m 0755 /tmp/tmp\.[^ ]+ BAZELISK_BIN|sudo install -m 0755 BAZELISK_BIN_TMP BAZELISK_BIN|g' "${TEST_LOG}"

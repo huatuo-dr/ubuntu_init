@@ -18,11 +18,13 @@ if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
     readonly COLOR_BLUE=$'\033[34m'
     readonly COLOR_GREEN=$'\033[32m'
     readonly COLOR_YELLOW=$'\033[33m'
+    readonly COLOR_RED=$'\033[31m'
     readonly COLOR_RESET=$'\033[0m'
 else
     readonly COLOR_BLUE=""
     readonly COLOR_GREEN=""
     readonly COLOR_YELLOW=""
+    readonly COLOR_RED=""
     readonly COLOR_RESET=""
 fi
 
@@ -44,6 +46,11 @@ success() {
 
 warn() {
     log "${COLOR_YELLOW}" "WARN" "$*"
+}
+
+die() {
+    printf "%s[ERROR]%s %s\n" "${COLOR_RED}" "${COLOR_RESET}" "$*" >&2
+    exit 1
 }
 
 configure_yazi_repository() {
@@ -208,6 +215,8 @@ install_tmux_config() {
 }
 
 install_lazygit() {
+    local arch
+    local asset_arch
     local version
     local temp_dir
 
@@ -217,14 +226,28 @@ install_lazygit() {
     fi
 
     info "Installing lazygit"
+    arch="$(dpkg --print-architecture)"
+    case "${arch}" in
+        amd64)
+            asset_arch="x86_64"
+            ;;
+        arm64)
+            asset_arch="arm64"
+            ;;
+        *)
+            die "Unsupported lazygit architecture: ${arch}"
+            ;;
+    esac
+
     version="$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" \
         | grep -Po '"tag_name": *"v\K[^"]*')"
+    [[ -n "${version}" ]] || die "Failed to resolve latest lazygit version"
     temp_dir="$(mktemp -d)"
 
     (
         cd "${temp_dir}"
         curl -Lo lazygit.tar.gz \
-            "https://github.com/jesseduffield/lazygit/releases/download/v${version}/lazygit_${version}_Linux_x86_64.tar.gz"
+            "https://github.com/jesseduffield/lazygit/releases/download/v${version}/lazygit_${version}_Linux_${asset_arch}.tar.gz"
         tar xf lazygit.tar.gz lazygit
         sudo install lazygit -D -t /usr/local/bin/
     )
@@ -265,6 +288,9 @@ EOF
 }
 
 main() {
+    info "Requesting sudo permission"
+    sudo -v
+
     install_yazi
     install_terminal_packages
     install_neovim
