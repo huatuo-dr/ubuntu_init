@@ -28,6 +28,7 @@ export EDITOR='nvim'
 alias gitperson="git config user.name \"huatuo-dr\"; git config user.email \"dlkxiaok@163.com\""
 alias gitshow="git config user.name; git config user.email"
 alias gitlog="git log --graph --pretty=format:'%C(auto)%h %d %s %C(black)%C(bold)%cr' --all"
+alias gitsub="git submodule update --init --recursive --force"
 gitweb() {
   if [ -n "$1" ]; then
     url="$1"
